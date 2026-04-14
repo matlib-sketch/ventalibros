@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agregar Libro</title>
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#2c1810">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Libros">
+  <link rel="apple-touch-icon" href="/icon.svg">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f0ebe3;
+      min-height: 100vh;
+      padding-bottom: 40px;
+    }
+
+    header {
+      background: #2c1810;
+      color: #fdf6ec;
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    header a {
+      color: #c9a87c;
+      text-decoration: none;
+      font-size: 1.3rem;
+    }
+
+    header h1 { font-size: 1.2rem; }
+
+    .card {
+      background: white;
+      margin: 16px;
+      border-radius: 14px;
+      padding: 20px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+    }
+
+    /* --- Foto --- */
+    .photo-area {
+      width: 100%;
+      aspect-ratio: 3/4;
+      max-height: 320px;
+      border: 2px dashed #c9a87c;
+      border-radius: 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      overflow: hidden;
+      position: relative;
+      background: #fdf6ec;
+      transition: border-color 0.2s;
+    }
+
+    .photo-area:hover { border-color: #8b4513; }
+
+    .photo-area img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .photo-area .overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(0,0,0,0.45);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 0.85rem;
+    }
+
+    .photo-placeholder { text-align: center; color: #a08060; }
+    .photo-placeholder .icon { font-size: 3rem; margin-bottom: 8px; }
+    .photo-placeholder p { font-size: 0.9rem; line-height: 1.4; }
+
+    #photo-input { display: none; }
+
+    /* --- Busqueda --- */
+    .section-title {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 10px;
+    }
+
+    .search-row {
+      display: flex;
+      gap: 8px;
+    }
+
+    .search-row input {
+      flex: 1;
+      padding: 12px 14px;
+      border: 1.5px solid #ddd;
+      border-radius: 10px;
+      font-size: 1rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .search-row input:focus { border-color: #8b4513; }
+
+    .btn-search {
+      padding: 12px 16px;
+      background: #2c1810;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 0.9rem;
+      font-weight: bold;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: opacity 0.2s;
+    }
+
+    .btn-search:disabled { opacity: 0.5; }
+
+    /* --- Resultado de busqueda --- */
+    #lookup-result {
+      margin-top: 12px;
+      padding: 12px;
+      border-radius: 10px;
+      font-size: 0.9rem;
+      display: none;
+    }
+
+    #lookup-result.success {
+      background: #e8f5e9;
+      border: 1px solid #a5d6a7;
+      color: #2e7d32;
+    }
+
+    #lookup-result.warning {
+      background: #fff8e1;
+      border: 1px solid #ffe082;
+      color: #f57f17;
+    }
+
+    /* --- Campos del libro --- */
+    .field { margin-bottom: 14px; }
+
+    .field label {
+      display: block;
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: #555;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 6px;
+    }
+
+    .field input {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1.5px solid #ddd;
+      border-radius: 10px;
+      font-size: 1rem;
+      outline: none;
+      transition: border-color 0.2s;
+      background: white;
+    }
+
+    .field input:focus { border-color: #8b4513; }
+    .field input[readonly] { background: #f8f8f8; color: #555; }
+
+    .price-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .price-highlight {
+      border-color: #2c7a3c !important;
+      background: #f1fbf3 !important;
+      font-weight: bold;
+      color: #2c7a3c !important;
+      font-size: 1.1rem !important;
+    }
+
+    /* --- Boton guardar --- */
+    .btn-save {
+      width: 100%;
+      padding: 16px;
+      background: #2c7a3c;
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-size: 1.1rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.1s;
+      letter-spacing: 0.5px;
+    }
+
+    .btn-save:active { transform: scale(0.98); }
+    .btn-save:disabled { background: #aaa; cursor: not-allowed; }
+
+    /* --- Toast --- */
+    #toast {
+      position: fixed;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: #2c7a3c;
+      color: white;
+      padding: 14px 28px;
+      border-radius: 30px;
+      font-size: 1rem;
+      font-weight: bold;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+      transition: transform 0.3s;
+      z-index: 999;
+      white-space: nowrap;
+    }
+
+    #toast.show { transform: translateX(-50%) translateY(0); }
+    #toast.error { background: #c0392b; }
+
+    /* --- Loading spinner --- */
+    .spinner {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255,255,255,0.4);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+      vertical-align: middle;
+      margin-right: 6px;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .divider {
+      height: 1px;
+      background: #eee;
+      margin: 16px 0;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <a href="/">←</a>
+  <h1>Agregar libro</h1>
+</header>
+
+<!-- Foto -->
+<div class="card">
+  <div class="section-title">Foto del libro</div>
+  <div class="photo-area" id="photo-area" onclick="document.getElementById('photo-input').click()">
+    <div class="photo-placeholder">
+      <div class="icon">📷</div>
+      <p>Toca para sacar foto<br>o elegir de la galeria</p>
+    </div>
+  </div>
+  <input type="file" id="photo-input" accept="image/*" capture="environment" onchange="previewPhoto(this)">
+</div>
+
+<!-- Busqueda automatica -->
+<div class="card">
+  <div class="section-title">Buscar precio en internet</div>
+  <div class="search-row">
+    <input type="text" id="search-input" placeholder="Nombre del libro..."
+           onkeydown="if(event.key==='Enter') searchBook()">
+    <button class="btn-search" id="btn-search" onclick="searchBook()">Buscar</button>
+  </div>
+  <div id="lookup-result"></div>
+</div>
+
+<!-- Datos del libro -->
+<div class="card">
+  <div class="section-title">Datos del libro</div>
+
+  <div class="field">
+    <label>Titulo *</label>
+    <input type="text" id="title" placeholder="Nombre del libro">
+  </div>
+
+  <div class="field">
+    <label>Autor</label>
+    <input type="text" id="author" placeholder="Nombre del autor">
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="section-title">Precio</div>
+  <div class="price-row">
+    <div class="field">
+      <label>Precio internet</label>
+      <input type="number" id="original-price" placeholder="0"
+             oninput="calcDiscount()" step="0.01">
+    </div>
+    <div class="field">
+      <label>Tu precio (-10%)</label>
+      <input type="number" id="sale-price" placeholder="0"
+             class="price-highlight" step="0.01">
+    </div>
+  </div>
+</div>
+
+<!-- Guardar -->
+<div style="padding: 0 16px;">
+  <button class="btn-save" id="btn-save" onclick="saveBook()">Guardar libro</button>
+</div>
+
+<div id="toast"></div>
+
+<script>
+  let photoBase64 = null; // data URI comprimida
+
+  // Comprime la imagen con Canvas y la convierte a base64
+  function compressImage(file, maxWidth = 900, quality = 0.82) {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = e => {
+        const img = new Image();
+        img.onload = () => {
+          const scale = Math.min(1, maxWidth / img.width);
+          const w = Math.round(img.width * scale);
+          const h = Math.round(img.height * scale);
+          const canvas = document.createElement('canvas');
+          canvas.width = w;
+          canvas.height = h;
+          canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+          resolve(canvas.toDataURL('image/jpeg', quality));
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function previewPhoto(input) {
+    const file = input.files[0];
+    if (!file) return;
+
+    const area = document.getElementById('photo-area');
+    area.innerHTML = `<div class="photo-placeholder"><div class="icon"><span class="spinner" style="border-color:rgba(160,128,96,.4);border-top-color:#a08060;width:32px;height:32px"></span></div></div>`;
+
+    photoBase64 = await compressImage(file);
+
+    area.innerHTML = `
+      <img src="${photoBase64}" alt="preview">
+      <div class="overlay">
+        <span style="font-size:1.5rem">📷</span>
+        <span>Cambiar foto</span>
+      </div>
+    `;
+    area.onclick = () => document.getElementById('photo-input').click();
+  }
+
+  async function searchBook() {
+    const q = document.getElementById('search-input').value.trim();
+    if (!q) return;
+
+    const btn = document.getElementById('btn-search');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>';
+
+    const resultEl = document.getElementById('lookup-result');
+    resultEl.style.display = 'none';
+
+    try {
+      const res = await fetch(`/api/lookup?q=${encodeURIComponent(q)}`);
+      const data = await res.json();
+
+      if (data.title) document.getElementById('title').value = data.title;
+      if (data.author) document.getElementById('author').value = data.author;
+
+      if (data.found && data.price) {
+        const originalPrice = data.price;
+        const salePrice = originalPrice * 0.90;
+        document.getElementById('original-price').value = originalPrice.toFixed(2);
+        document.getElementById('sale-price').value = salePrice.toFixed(2);
+        resultEl.className = 'success';
+        resultEl.innerHTML = `Precio encontrado: <strong>${data.currency || '$'}${originalPrice.toFixed(2)}</strong> &rarr; Tu precio: <strong>$${salePrice.toFixed(2)}</strong>`;
+        resultEl.style.display = 'block';
+      } else {
+        resultEl.className = 'warning';
+        resultEl.innerHTML = `No se encontro precio automatico. Ingresalo manualmente.`;
+        resultEl.style.display = 'block';
+      }
+    } catch(e) {
+      resultEl.className = 'warning';
+      resultEl.innerHTML = 'Error al buscar. Ingresa el precio manualmente.';
+      resultEl.style.display = 'block';
+    }
+
+    btn.disabled = false;
+    btn.textContent = 'Buscar';
+  }
+
+  function calcDiscount() {
+    const orig = parseFloat(document.getElementById('original-price').value);
+    if (!isNaN(orig) && orig > 0) {
+      document.getElementById('sale-price').value = (orig * 0.90).toFixed(2);
+    }
+  }
+
+  function resetForm() {
+    document.getElementById('title').value = '';
+    document.getElementById('author').value = '';
+    document.getElementById('original-price').value = '';
+    document.getElementById('sale-price').value = '';
+    document.getElementById('search-input').value = '';
+    document.getElementById('lookup-result').style.display = 'none';
+    document.getElementById('photo-input').value = '';
+    const area = document.getElementById('photo-area');
+    area.innerHTML = `
+      <div class="photo-placeholder">
+        <div class="icon">📷</div>
+        <p>Toca para sacar foto<br>o elegir de la galeria</p>
+      </div>
+    `;
+    area.onclick = () => document.getElementById('photo-input').click();
+    photoBase64 = null;
+  }
+
+  async function saveBook() {
+    const title = document.getElementById('title').value.trim();
+    const author = document.getElementById('author').value.trim();
+    const originalPrice = document.getElementById('original-price').value;
+    const price = document.getElementById('sale-price').value;
+
+    if (!title) { showToast('Escribe el titulo del libro', true); return; }
+    if (!price)  { showToast('Ingresa el precio de venta', true); return; }
+
+    const btn = document.getElementById('btn-save');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Guardando...';
+
+    try {
+      const res = await fetch('/api/books', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title,
+          author,
+          originalPrice: originalPrice || null,
+          price,
+          photo: photoBase64 || null
+        })
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        showToast('Libro guardado!');
+        setTimeout(resetForm, 1200);
+      } else {
+        showToast('Error al guardar', true);
+      }
+    } catch(e) {
+      showToast('Error de conexion', true);
+    }
+
+    btn.disabled = false;
+    btn.textContent = 'Guardar libro';
+  }
+
+  function showToast(msg, isError = false) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = isError ? 'error show' : 'show';
+    setTimeout(() => t.className = isError ? 'error' : '', 3000);
+  }
+
+  document.getElementById('title').addEventListener('blur', () => {
+    const title = document.getElementById('title').value.trim();
+    const searchInput = document.getElementById('search-input');
+    if (title && !searchInput.value) searchInput.value = title;
+  });
+
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  }
+</script>
+</body>
+</html>

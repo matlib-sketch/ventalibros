@@ -1,0 +1,31 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install:*)",
+      "Bash(where node:*)",
+      "Bash(python -c \"import flask; print\\(flask.__version__\\)\")",
+      "Bash(python server.py)",
+      "Bash(curl -s http://localhost:3000/api/books)",
+      "Bash(curl -s -X POST http://localhost:3000/api/books -F 'title=El Principito' -F 'author=Antoine de Saint-Exupery' -F originalPrice=1500 -F price=1350)",
+      "Bash(curl -s \"http://localhost:3000/api/lookup?q=Harry+Potter+y+la+piedra+filosofal\")",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(pkill -f \"python server.py\")",
+      "Bash(curl -s -X POST http://localhost:3000/api/books -H 'Content-Type: application/json' -d '{\"title\":\"Cien años de soledad\",\"author\":\"Gabriel Garcia Marquez\",\"originalPrice\":2000,\"price\":1800,\"photo\":null}')",
+      "Bash(pkill -f \"python\")",
+      "Bash(curl -s -X POST http://localhost:3000/api/books -H 'Content-Type: application/json' -d '{\"title\":\"Cien anios de soledad\",\"author\":\"Garcia Marquez\",\"originalPrice\":2000,\"price\":1800,\"photo\":null}')",
+      "Bash(curl -sv -X POST http://localhost:3000/api/books -H 'Content-Type: application/json' -d '{\"title\":\"Test\",\"price\":1000}')",
+      "Bash(python -c ':*)",
+      "Bash(netstat -ano)",
+      "Bash(taskkill /PID 21952 /F)",
+      "Bash(taskkill /PID 21632 /F)",
+      "Bash(taskkill /PID 11180 /F)",
+      "Bash(curl -s -X POST http://localhost:3000/api/books -H 'Content-Type: application/json' -d '{\"title\":\"Cien anios de soledad\",\"author\":\"Garcia Marquez\",\"originalPrice\":2000,\"price\":1800}')",
+      "Bash(curl -s -X POST http://localhost:3000/api/books -H 'Content-Type: application/json' --data-raw '{\"title\":\"Test\",\"price\":1800}')",
+      "Bash(PORT=3001 python server.py)",
+      "Bash(curl -s -X POST http://localhost:3001/api/books -H 'Content-Type: application/json' --data-raw '{\"title\":\"El Principito\",\"author\":\"Saint-Exupery\",\"originalPrice\":1500,\"price\":1350}')",
+      "Bash(curl -s http://localhost:3001/api/books)",
+      "Bash(git --version)",
+      "Bash(gh --version)"
+    ]
+  }
+}

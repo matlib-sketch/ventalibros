@@ -1,0 +1,25 @@
+{
+  "name": "Mis Libros en Venta",
+  "short_name": "Libros",
+  "description": "Catalogo de libros usados en venta",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#2c1810",
+  "theme_color": "#2c1810",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Agregar libro",
+      "url": "/admin.html",
+      "description": "Agregar un nuevo libro"
+    }
+  ]
+}

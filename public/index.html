@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mis Libros en Venta</title>
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#2c1810">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Libros">
+  <link rel="apple-touch-icon" href="/icon.svg">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Georgia', serif;
+      background: #fdf6ec;
+      color: #2c2c2c;
+      min-height: 100vh;
+    }
+
+    header {
+      background: #2c1810;
+      color: #fdf6ec;
+      padding: 24px 20px;
+      text-align: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    }
+
+    header h1 {
+      font-size: 2rem;
+      letter-spacing: 2px;
+      margin-bottom: 4px;
+    }
+
+    header p {
+      font-size: 0.9rem;
+      color: #c9a87c;
+      letter-spacing: 1px;
+    }
+
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 20px;
+      background: #3d2314;
+      color: #fdf6ec;
+      font-size: 0.85rem;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .top-bar a {
+      color: #c9a87c;
+      text-decoration: none;
+      font-weight: bold;
+      border: 1px solid #c9a87c;
+      padding: 5px 12px;
+      border-radius: 4px;
+      transition: all 0.2s;
+    }
+
+    .top-bar a:hover { background: #c9a87c; color: #2c1810; }
+
+    .filters {
+      padding: 16px 20px;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+      background: #f5ead8;
+      border-bottom: 1px solid #ddd;
+    }
+
+    .filters input {
+      flex: 1;
+      min-width: 160px;
+      padding: 8px 14px;
+      border: 1px solid #c9a87c;
+      border-radius: 20px;
+      font-size: 0.95rem;
+      background: white;
+      outline: none;
+    }
+
+    .filters input:focus { border-color: #8b4513; }
+
+    #book-count {
+      font-size: 0.85rem;
+      color: #666;
+      white-space: nowrap;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 24px;
+      padding: 28px 20px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .book-card {
+      background: white;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 3px 12px rgba(0,0,0,0.1);
+      transition: transform 0.2s, box-shadow 0.2s;
+      position: relative;
+    }
+
+    .book-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+    }
+
+    .book-card.sold { opacity: 0.55; }
+    .book-card.sold::after {
+      content: "VENDIDO";
+      position: absolute;
+      top: 12px;
+      right: -28px;
+      background: #c0392b;
+      color: white;
+      font-size: 0.7rem;
+      font-weight: bold;
+      padding: 4px 36px;
+      transform: rotate(35deg);
+      letter-spacing: 1px;
+    }
+
+    .book-img {
+      width: 100%;
+      aspect-ratio: 3/4;
+      object-fit: cover;
+      object-position: center top;
+      background: #e8dcc8;
+      display: block;
+    }
+
+    .book-img-placeholder {
+      width: 100%;
+      aspect-ratio: 3/4;
+      background: linear-gradient(135deg, #e8dcc8, #d4c4a8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 4rem;
+      color: #a08060;
+    }
+
+    .book-info {
+      padding: 14px;
+    }
+
+    .book-title {
+      font-size: 1rem;
+      font-weight: bold;
+      line-height: 1.3;
+      margin-bottom: 4px;
+      color: #2c1810;
+    }
+
+    .book-author {
+      font-size: 0.8rem;
+      color: #888;
+      margin-bottom: 12px;
+      font-style: italic;
+    }
+
+    .price-block {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .price-sale {
+      font-size: 1.4rem;
+      font-weight: bold;
+      color: #2c7a3c;
+    }
+
+    .price-original {
+      font-size: 0.8rem;
+      color: #aaa;
+      text-decoration: line-through;
+    }
+
+    .discount-badge {
+      background: #e74c3c;
+      color: white;
+      font-size: 0.65rem;
+      font-weight: bold;
+      padding: 2px 6px;
+      border-radius: 10px;
+    }
+
+    .admin-btns {
+      display: none;
+      gap: 6px;
+      margin-top: 10px;
+    }
+
+    .admin-btns.visible { display: flex; }
+
+    .btn-sold, .btn-delete {
+      flex: 1;
+      padding: 6px;
+      border: none;
+      border-radius: 5px;
+      font-size: 0.75rem;
+      cursor: pointer;
+      font-weight: bold;
+      transition: opacity 0.2s;
+    }
+
+    .btn-sold { background: #f39c12; color: white; }
+    .btn-sold:hover { opacity: 0.85; }
+    .btn-delete { background: #e74c3c; color: white; }
+    .btn-delete:hover { opacity: 0.85; }
+
+    .empty-state {
+      text-align: center;
+      padding: 80px 20px;
+      color: #999;
+      grid-column: 1 / -1;
+    }
+
+    .empty-state .icon { font-size: 4rem; margin-bottom: 16px; }
+    .empty-state p { font-size: 1.1rem; }
+
+    .admin-bar {
+      background: #fff3cd;
+      border: 1px solid #ffc107;
+      padding: 10px 20px;
+      text-align: center;
+      font-size: 0.85rem;
+      color: #856404;
+    }
+
+    .admin-bar button {
+      margin-left: 10px;
+      padding: 4px 12px;
+      border: 1px solid #856404;
+      background: transparent;
+      border-radius: 4px;
+      cursor: pointer;
+      color: #856404;
+      font-weight: bold;
+    }
+
+    @media (max-width: 480px) {
+      header h1 { font-size: 1.5rem; }
+      .grid { grid-template-columns: repeat(2, 1fr); gap: 12px; padding: 16px 10px; }
+      .book-info { padding: 10px; }
+      .book-title { font-size: 0.85rem; }
+      .price-sale { font-size: 1.1rem; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>📚 Mis Libros</h1>
+  <p>Libros usados en excelente estado</p>
+</header>
+
+<div class="top-bar">
+  <span id="book-count">Cargando...</span>
+  <a href="/admin.html">+ Agregar libro</a>
+</div>
+
+<div id="admin-bar" class="admin-bar" style="display:none">
+  Modo administrador activo — puedes marcar libros como vendidos o eliminarlos
+  <button onclick="toggleAdmin()">Salir</button>
+</div>
+
+<div class="filters">
+  <input type="text" id="search" placeholder="Buscar por titulo o autor..." oninput="renderBooks()">
+</div>
+
+<div class="grid" id="grid"></div>
+
+<script>
+  let allBooks = [];
+  let adminMode = false;
+
+  // Activar admin con doble click en el titulo
+  document.querySelector('header h1').addEventListener('dblclick', () => {
+    adminMode = !adminMode;
+    document.getElementById('admin-bar').style.display = adminMode ? 'block' : 'none';
+    renderBooks();
+  });
+
+  function toggleAdmin() {
+    adminMode = false;
+    document.getElementById('admin-bar').style.display = 'none';
+    renderBooks();
+  }
+
+  async function loadBooks() {
+    const res = await fetch('/api/books');
+    allBooks = await res.json();
+    renderBooks();
+  }
+
+  function renderBooks() {
+    const q = document.getElementById('search').value.toLowerCase().trim();
+    let books = allBooks;
+
+    if (q) {
+      books = books.filter(b =>
+        b.title.toLowerCase().includes(q) ||
+        (b.author && b.author.toLowerCase().includes(q))
+      );
+    }
+
+    const available = books.filter(b => !b.sold);
+    const sold = books.filter(b => b.sold);
+    const sorted = [...available, ...sold];
+
+    const count = allBooks.filter(b => !b.sold).length;
+    document.getElementById('book-count').textContent =
+      count === 0 ? 'Sin libros disponibles' :
+      count === 1 ? '1 libro disponible' :
+      `${count} libros disponibles`;
+
+    const grid = document.getElementById('grid');
+
+    if (sorted.length === 0) {
+      grid.innerHTML = `
+        <div class="empty-state">
+          <div class="icon">📖</div>
+          <p>${q ? 'No se encontraron libros con esa busqueda' : 'Todavia no hay libros cargados'}</p>
+        </div>`;
+      return;
+    }
+
+    grid.innerHTML = sorted.map(book => `
+      <div class="book-card ${book.sold ? 'sold' : ''}">
+        ${book.photo
+          ? `<img class="book-img" src="${book.photo}" alt="${escHtml(book.title)}" loading="lazy">`
+          : `<div class="book-img-placeholder">📚</div>`
+        }
+        <div class="book-info">
+          <div class="book-title">${escHtml(book.title)}</div>
+          ${book.author ? `<div class="book-author">${escHtml(book.author)}</div>` : ''}
+          <div class="price-block">
+            <span class="price-sale">${formatPrice(book.price)}</span>
+            ${book.originalPrice
+              ? `<span class="price-original">${formatPrice(book.originalPrice)}</span>
+                 <span class="discount-badge">-10%</span>`
+              : ''
+            }
+          </div>
+          <div class="admin-btns ${adminMode ? 'visible' : ''}">
+            <button class="btn-sold" onclick="markSold('${book.id}', ${!book.sold})">
+              ${book.sold ? '↩ Disponible' : '✓ Vendido'}
+            </button>
+            <button class="btn-delete" onclick="deleteBook('${book.id}')">Eliminar</button>
+          </div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  async function markSold(id, sold) {
+    await fetch(`/api/books/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sold })
+    });
+    await loadBooks();
+  }
+
+  async function deleteBook(id) {
+    if (!confirm('¿Eliminar este libro?')) return;
+    await fetch(`/api/books/${id}`, { method: 'DELETE' });
+    allBooks = allBooks.filter(b => b.id !== id);
+    renderBooks();
+  }
+
+  function formatPrice(p) {
+    if (p == null) return '';
+    return '$' + p.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  }
+
+  function escHtml(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  loadBooks();
+
+  // Registrar service worker (PWA)
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  }
+</script>
+</body>
+</html>
