@@ -254,9 +254,88 @@
       background: #eee;
       margin: 16px 0;
     }
+
+    /* Login overlay */
+    #login-overlay {
+      position: fixed;
+      inset: 0;
+      background: #2c1810;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+    }
+
+    #login-box {
+      background: white;
+      border-radius: 16px;
+      padding: 36px 28px;
+      width: 90%;
+      max-width: 340px;
+      text-align: center;
+    }
+
+    #login-box h2 {
+      font-size: 1.3rem;
+      color: #2c1810;
+      margin-bottom: 6px;
+    }
+
+    #login-box p {
+      color: #888;
+      font-size: 0.85rem;
+      margin-bottom: 20px;
+    }
+
+    #login-pw {
+      width: 100%;
+      padding: 13px 16px;
+      border: 1.5px solid #ddd;
+      border-radius: 10px;
+      font-size: 1.1rem;
+      text-align: center;
+      letter-spacing: 4px;
+      outline: none;
+      margin-bottom: 12px;
+    }
+
+    #login-pw:focus { border-color: #8b4513; }
+
+    #login-error {
+      color: #c0392b;
+      font-size: 0.85rem;
+      margin-bottom: 10px;
+      min-height: 18px;
+    }
+
+    #login-btn {
+      width: 100%;
+      padding: 13px;
+      background: #2c1810;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    #login-btn:disabled { opacity: 0.6; }
   </style>
 </head>
 <body>
+
+<!-- Pantalla de login -->
+<div id="login-overlay">
+  <div id="login-box">
+    <h2>Administrador</h2>
+    <p>Ingresa la contrasena para agregar libros</p>
+    <input type="password" id="login-pw" placeholder="••••••••"
+           onkeydown="if(event.key==='Enter') doLogin()">
+    <div id="login-error"></div>
+    <button id="login-btn" onclick="doLogin()">Entrar</button>
+  </div>
+</div>
 
 <header>
   <a href="/">←</a>
@@ -325,39 +404,39 @@
 <div id="toast"></div>
 
 <script>
-  // Verificar contraseña contra el servidor
-  let adminPassword = sessionStorage.getItem('adminPassword') || '';
+  let adminPassword = '';
 
-  async function verifyPassword(pw) {
-    const res = await fetch('/api/verify', { headers: { 'X-Admin-Password': pw } });
-    return res.ok;
-  }
+  async function doLogin() {
+    const pw = document.getElementById('login-pw').value;
+    if (!pw) return;
 
-  async function askPassword() {
-    const pw = prompt('Contrasena de administrador:') || '';
-    if (!pw) { location.href = '/'; return; }
-    const ok = await verifyPassword(pw);
-    if (!ok) {
-      alert('Contrasena incorrecta, intenta de nuevo.');
-      return askPassword();
-    }
-    adminPassword = pw;
-    sessionStorage.setItem('adminPassword', pw);
-  }
+    const btn = document.getElementById('login-btn');
+    btn.disabled = true;
+    btn.textContent = 'Verificando...';
+    document.getElementById('login-error').textContent = '';
 
-  // Al cargar, verificar si la guardada sigue siendo valida
-  (async () => {
-    if (adminPassword) {
-      const ok = await verifyPassword(adminPassword);
-      if (!ok) {
-        sessionStorage.removeItem('adminPassword');
-        adminPassword = '';
+    try {
+      const res = await fetch('/api/verify', { headers: { 'X-Admin-Password': pw } });
+      if (res.ok) {
+        adminPassword = pw;
+        document.getElementById('login-overlay').style.display = 'none';
+      } else {
+        document.getElementById('login-error').textContent = 'Contrasena incorrecta';
+        document.getElementById('login-pw').value = '';
+        document.getElementById('login-pw').focus();
       }
+    } catch(e) {
+      document.getElementById('login-error').textContent = 'Error de conexion, intenta de nuevo';
     }
-    if (!adminPassword) {
-      await askPassword();
-    }
-  })();
+
+    btn.disabled = false;
+    btn.textContent = 'Entrar';
+  }
+
+  // Focus automatico en el campo de contrasena
+  window.addEventListener('load', () => {
+    document.getElementById('login-pw').focus();
+  });
 
   let photoBase64 = null; // data URI comprimida
 
