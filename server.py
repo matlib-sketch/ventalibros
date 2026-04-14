@@ -88,13 +88,15 @@ def delete_book_db(book_id):
             cur.execute("DELETE FROM books WHERE id=%s", (book_id,))
         conn.commit()
 
-def patch_book_db(book_id, sold=None, price=None):
+def patch_book_db(book_id, sold=None, price=None, photo=None):
     with get_conn() as conn:
         with conn.cursor() as cur:
             if sold is not None:
                 cur.execute("UPDATE books SET sold=%s WHERE id=%s", (sold, book_id))
             if price is not None:
                 cur.execute("UPDATE books SET price=%s WHERE id=%s", (price, book_id))
+            if photo is not None:
+                cur.execute("UPDATE books SET photo=%s WHERE id=%s", (photo, book_id))
         conn.commit()
 
 def save_books_json(books):
@@ -232,7 +234,8 @@ def patch_book(book_id):
         patch_book_db(
             book_id,
             sold=data.get('sold'),
-            price=float(data['price']) if 'price' in data else None
+            price=float(data['price']) if 'price' in data else None,
+            photo=data.get('photo')
         )
     else:
         books = read_books()
@@ -243,6 +246,8 @@ def patch_book(book_id):
             book['price'] = float(data['price'])
         if 'sold' in data:
             book['sold'] = bool(data['sold'])
+        if 'photo' in data:
+            book['photo'] = data['photo']
         save_books_json(books)
 
     return jsonify({'success': True})

@@ -206,7 +206,7 @@
 
     .admin-btns.visible { display: flex; }
 
-    .btn-sold, .btn-delete {
+    .btn-sold, .btn-delete, .btn-photo {
       flex: 1;
       padding: 6px;
       border: none;
@@ -221,6 +221,8 @@
     .btn-sold:hover { opacity: 0.85; }
     .btn-delete { background: #e74c3c; color: white; }
     .btn-delete:hover { opacity: 0.85; }
+    .btn-photo { background: #3498db; color: white; }
+    .btn-photo:hover { opacity: 0.85; }
 
     .empty-state {
       text-align: center;
@@ -363,6 +365,7 @@
             }
           </div>
           <div class="admin-btns ${adminMode ? 'visible' : ''}">
+            <button class="btn-photo" onclick="changePhoto('${book.id}')">📷 Foto</button>
             <button class="btn-sold" onclick="markSold('${book.id}', ${!book.sold})">
               ${book.sold ? '↩ Disponible' : '✓ Vendido'}
             </button>
@@ -392,6 +395,49 @@
     if (res.status === 403) { alert('Contrasena incorrecta'); return; }
     allBooks = allBooks.filter(b => b.id !== id);
     renderBooks();
+  }
+
+  // Input de foto oculto reutilizable
+  const photoInput = document.createElement('input');
+  photoInput.type = 'file';
+  photoInput.accept = 'image/*';
+  document.body.appendChild(photoInput);
+
+  function compressImage(file) {
+    return new Promise(resolve => {
+      const reader = new FileReader();
+      reader.onload = e => {
+        const img = new Image();
+        img.onload = () => {
+          const scale = Math.min(1, 900 / img.width);
+          const w = Math.round(img.width * scale);
+          const h = Math.round(img.height * scale);
+          const canvas = document.createElement('canvas');
+          canvas.width = w; canvas.height = h;
+          canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+          resolve(canvas.toDataURL('image/jpeg', 0.82));
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function changePhoto(id) {
+    photoInput.onchange = async () => {
+      const file = photoInput.files[0];
+      if (!file) return;
+      const photo = await compressImage(file);
+      const res = await fetch(`/api/books/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'X-Admin-Password': adminPassword },
+        body: JSON.stringify({ photo })
+      });
+      if (res.status === 403) { alert('Contrasena incorrecta'); return; }
+      await loadBooks();
+      photoInput.value = '';
+    };
+    photoInput.click();
   }
 
   function formatPrice(p) {
