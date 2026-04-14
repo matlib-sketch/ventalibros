@@ -325,6 +325,14 @@
 <div id="toast"></div>
 
 <script>
+  // Pedir contraseña al entrar
+  let adminPassword = sessionStorage.getItem('adminPassword') || '';
+  if (!adminPassword) {
+    adminPassword = prompt('Contrasena de administrador:') || '';
+    if (!adminPassword) { location.href = '/'; }
+    sessionStorage.setItem('adminPassword', adminPassword);
+  }
+
   let photoBase64 = null; // data URI comprimida
 
   // Comprime la imagen con Canvas y la convierte a base64
@@ -451,7 +459,7 @@
     try {
       const res = await fetch('/api/books', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-Admin-Password': adminPassword },
         body: JSON.stringify({
           title,
           author,
@@ -462,6 +470,12 @@
       });
       const data = await res.json();
 
+      if (res.status === 403) {
+        sessionStorage.removeItem('adminPassword');
+        showToast('Contrasena incorrecta', true);
+        setTimeout(() => location.reload(), 1500);
+        return;
+      }
       if (data.success) {
         showToast('Libro guardado!');
         setTimeout(resetForm, 1200);

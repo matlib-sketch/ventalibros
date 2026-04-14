@@ -10,6 +10,14 @@ app = Flask(__name__, static_folder='public')
 
 BASE_DIR = Path(__file__).parent
 
+ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'libros123')
+
+def check_auth():
+    pw = request.headers.get('X-Admin-Password', '')
+    if pw != ADMIN_PASSWORD:
+        return jsonify({'error': 'Sin permiso'}), 403
+    return None
+
 # En Railway usamos /data (volumen persistente); local usamos ./data
 DATA_DIR  = Path(os.environ.get('DATA_DIR', BASE_DIR / 'data'))
 DATA_FILE = DATA_DIR / 'books.json'
@@ -92,7 +100,8 @@ def lookup():
 
 @app.post('/api/books')
 def add_book():
-    # Acepta JSON con foto en base64 (no multipart)
+    err = check_auth()
+    if err: return err
     data = request.get_json(force=True, silent=True) or {}
 
     title = (data.get('title') or '').strip()
@@ -124,12 +133,16 @@ def add_book():
 
 @app.delete('/api/books/<book_id>')
 def delete_book(book_id):
+    err = check_auth()
+    if err: return err
     books = [b for b in read_books() if b['id'] != book_id]
     save_books(books)
     return jsonify({'success': True})
 
 @app.patch('/api/books/<book_id>')
 def patch_book(book_id):
+    err = check_auth()
+    if err: return err
     books = read_books()
     book  = next((b for b in books if b['id'] == book_id), None)
     if not book:

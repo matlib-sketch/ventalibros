@@ -287,9 +287,15 @@
 <script>
   let allBooks = [];
   let adminMode = false;
+  let adminPassword = '';
 
   // Activar admin con doble click en el titulo
   document.querySelector('header h1').addEventListener('dblclick', () => {
+    if (!adminMode) {
+      const pw = prompt('Contrasena de administrador:');
+      if (!pw) return;
+      adminPassword = pw;
+    }
     adminMode = !adminMode;
     document.getElementById('admin-bar').style.display = adminMode ? 'block' : 'none';
     renderBooks();
@@ -368,17 +374,22 @@
   }
 
   async function markSold(id, sold) {
-    await fetch(`/api/books/${id}`, {
+    const res = await fetch(`/api/books/${id}`, {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'X-Admin-Password': adminPassword },
       body: JSON.stringify({ sold })
     });
+    if (res.status === 403) { alert('Contrasena incorrecta'); return; }
     await loadBooks();
   }
 
   async function deleteBook(id) {
-    if (!confirm('¿Eliminar este libro?')) return;
-    await fetch(`/api/books/${id}`, { method: 'DELETE' });
+    if (!confirm('Eliminar este libro?')) return;
+    const res = await fetch(`/api/books/${id}`, {
+      method: 'DELETE',
+      headers: { 'X-Admin-Password': adminPassword }
+    });
+    if (res.status === 403) { alert('Contrasena incorrecta'); return; }
     allBooks = allBooks.filter(b => b.id !== id);
     renderBooks();
   }
