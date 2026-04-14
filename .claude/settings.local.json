@@ -29,7 +29,8 @@
       "Bash(curl -s https://web-production-35679.up.railway.app/api/books)",
       "Bash(curl -s -X POST https://web-production-35679.up.railway.app/api/books -H 'Content-Type: application/json' -H 'X-Admin-Password: libros123' -d '{\"title\":\"Test\",\"price\":1000}')",
       "Bash(curl -s https://web-production-35679.up.railway.app/api/verify -H \"X-Admin-Password: 1\")",
-      "Bash(curl -s -X POST https://web-production-35679.up.railway.app/api/books -H 'Content-Type: application/json' -H 'X-Admin-Password: 1' -d '{\"title\":\"Prueba\",\"price\":500}')"
+      "Bash(curl -s -X POST https://web-production-35679.up.railway.app/api/books -H 'Content-Type: application/json' -H 'X-Admin-Password: 1' -d '{\"title\":\"Prueba\",\"price\":500}')",
+      "Bash(curl -s https://web-production-35679.up.railway.app/admin.html)"
     ]
   }
 }

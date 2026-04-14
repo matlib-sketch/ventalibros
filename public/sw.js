@@ -1,4 +1,4 @@
-const CACHE = 'libros-v1';
+const CACHE = 'libros-v3';
 const SHELL = ['/', '/admin.html', '/manifest.json', '/icon.svg'];
 
 self.addEventListener('install', e => {
