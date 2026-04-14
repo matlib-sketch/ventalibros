@@ -325,13 +325,39 @@
 <div id="toast"></div>
 
 <script>
-  // Pedir contraseña al entrar
+  // Verificar contraseña contra el servidor
   let adminPassword = sessionStorage.getItem('adminPassword') || '';
-  if (!adminPassword) {
-    adminPassword = prompt('Contrasena de administrador:') || '';
-    if (!adminPassword) { location.href = '/'; }
-    sessionStorage.setItem('adminPassword', adminPassword);
+
+  async function verifyPassword(pw) {
+    const res = await fetch('/api/verify', { headers: { 'X-Admin-Password': pw } });
+    return res.ok;
   }
+
+  async function askPassword() {
+    const pw = prompt('Contrasena de administrador:') || '';
+    if (!pw) { location.href = '/'; return; }
+    const ok = await verifyPassword(pw);
+    if (!ok) {
+      alert('Contrasena incorrecta, intenta de nuevo.');
+      return askPassword();
+    }
+    adminPassword = pw;
+    sessionStorage.setItem('adminPassword', pw);
+  }
+
+  // Al cargar, verificar si la guardada sigue siendo valida
+  (async () => {
+    if (adminPassword) {
+      const ok = await verifyPassword(adminPassword);
+      if (!ok) {
+        sessionStorage.removeItem('adminPassword');
+        adminPassword = '';
+      }
+    }
+    if (!adminPassword) {
+      await askPassword();
+    }
+  })();
 
   let photoBase64 = null; // data URI comprimida
 

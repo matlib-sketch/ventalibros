@@ -122,6 +122,12 @@ def static_files(filename):
 
 # ---------- API ----------
 
+@app.get('/api/verify')
+def verify():
+    err = check_auth()
+    if err: return err
+    return jsonify({'ok': True})
+
 @app.get('/api/books')
 def get_books():
     return jsonify(read_books())
