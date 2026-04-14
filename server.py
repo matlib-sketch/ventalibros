@@ -10,7 +10,9 @@ app = Flask(__name__, static_folder='public')
 
 BASE_DIR = Path(__file__).parent
 ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'libros123')
-DATABASE_URL = os.environ.get('DATABASE_URL')
+# Railway usa "postgres://" pero psycopg2 necesita "postgresql://"
+_db_url = os.environ.get('DATABASE_URL', '')
+DATABASE_URL = _db_url.replace('postgres://', 'postgresql://') if _db_url else None
 
 def check_auth():
     pw = request.headers.get('X-Admin-Password', '')
