@@ -41,6 +41,7 @@ def init_db():
                     created_at TEXT
                 )
             """)
+            cur.execute("ALTER TABLE books ADD COLUMN IF NOT EXISTS detail TEXT DEFAULT ''")
         conn.commit()
 
 def read_books():
@@ -54,6 +55,7 @@ def read_books():
             'id':            r['id'],
             'title':         r['title'],
             'author':        r['author'] or '',
+            'detail':        r['detail'] or '',
             'originalPrice': r['original_price'],
             'price':         r['price'],
             'photo':         r['photo'],
@@ -61,7 +63,6 @@ def read_books():
             'createdAt':     r['created_at'],
         } for r in rows]
     else:
-        # fallback local: archivo JSON
         data_file = BASE_DIR / 'data' / 'books.json'
         data_file.parent.mkdir(parents=True, exist_ok=True)
         if not data_file.exists():
@@ -75,9 +76,9 @@ def save_book_db(book):
     with get_conn() as conn:
         with conn.cursor() as cur:
             cur.execute("""
-                INSERT INTO books (id, title, author, original_price, price, photo, sold, created_at)
-                VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
-            """, (book['id'], book['title'], book['author'],
+                INSERT INTO books (id, title, author, detail, original_price, price, photo, sold, created_at)
+                VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
+            """, (book['id'], book['title'], book['author'], book.get('detail', ''),
                   book['originalPrice'], book['price'],
                   book['photo'], book['sold'], book['createdAt']))
         conn.commit()
@@ -88,7 +89,7 @@ def delete_book_db(book_id):
             cur.execute("DELETE FROM books WHERE id=%s", (book_id,))
         conn.commit()
 
-def patch_book_db(book_id, sold=None, price=None, photo=None):
+def patch_book_db(book_id, sold=None, price=None, photo=None, title=None, author=None, detail=None):
     with get_conn() as conn:
         with conn.cursor() as cur:
             if sold is not None:
@@ -97,6 +98,12 @@ def patch_book_db(book_id, sold=None, price=None, photo=None):
                 cur.execute("UPDATE books SET price=%s WHERE id=%s", (price, book_id))
             if photo is not None:
                 cur.execute("UPDATE books SET photo=%s WHERE id=%s", (photo, book_id))
+            if title is not None:
+                cur.execute("UPDATE books SET title=%s WHERE id=%s", (title, book_id))
+            if author is not None:
+                cur.execute("UPDATE books SET author=%s WHERE id=%s", (author, book_id))
+            if detail is not None:
+                cur.execute("UPDATE books SET detail=%s WHERE id=%s", (detail, book_id))
         conn.commit()
 
 def save_books_json(books):
@@ -104,7 +111,6 @@ def save_books_json(books):
     data_file.parent.mkdir(parents=True, exist_ok=True)
     data_file.write_text(json.dumps(books, ensure_ascii=False, indent=2), encoding='utf-8')
 
-# Inicializar DB al arrancar
 if DATABASE_URL:
     try:
         init_db()
@@ -195,6 +201,7 @@ def add_book():
         'id':            str(uuid.uuid4()),
         'title':         title,
         'author':        (data.get('author') or '').strip(),
+        'detail':        (data.get('detail') or '').strip(),
         'originalPrice': orig if orig > 0 else None,
         'price':         float(price),
         'photo':         data.get('photo') or None,
@@ -235,7 +242,10 @@ def patch_book(book_id):
             book_id,
             sold=data.get('sold'),
             price=float(data['price']) if 'price' in data else None,
-            photo=data.get('photo')
+            photo=data.get('photo'),
+            title=data.get('title'),
+            author=data.get('author'),
+            detail=data.get('detail'),
         )
     else:
         books = read_books()
@@ -248,6 +258,12 @@ def patch_book(book_id):
             book['sold'] = bool(data['sold'])
         if 'photo' in data:
             book['photo'] = data['photo']
+        if 'title' in data:
+            book['title'] = data['title']
+        if 'author' in data:
+            book['author'] = data['author']
+        if 'detail' in data:
+            book['detail'] = data['detail']
         save_books_json(books)
 
     return jsonify({'success': True})
