@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Agregar Libro</title>
+  <title>Mis Libros en Venta</title>
   <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#2c1810">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -12,449 +12,334 @@
   <link rel="apple-touch-icon" href="/icon.svg">
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: #f0ebe3;
-      min-height: 100vh;
-      padding-bottom: 40px;
+    body { font-family: 'Georgia', serif; background: #fdf6ec; color: #2c2c2c; min-height: 100vh; }
+    header { background: #2c1810; color: #fdf6ec; padding: 24px 20px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
+    header h1 { font-size: 2rem; letter-spacing: 2px; margin-bottom: 4px; }
+    header p { font-size: 0.9rem; color: #c9a87c; letter-spacing: 1px; }
+    .top-bar { display: flex; justify-content: space-between; align-items: center; padding: 12px 20px; background: #3d2314; color: #fdf6ec; font-size: 0.85rem; flex-wrap: wrap; gap: 8px; }
+    .top-bar a { color: #c9a87c; text-decoration: none; font-weight: bold; border: 1px solid #c9a87c; padding: 5px 12px; border-radius: 4px; transition: all 0.2s; }
+    .top-bar a:hover { background: #c9a87c; color: #2c1810; }
+    .filters { padding: 16px 20px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; background: #f5ead8; border-bottom: 1px solid #ddd; }
+    .filters input { flex: 1; min-width: 160px; padding: 8px 14px; border: 1px solid #c9a87c; border-radius: 20px; font-size: 0.95rem; background: white; outline: none; }
+    .filters input:focus { border-color: #8b4513; }
+    #book-count { font-size: 0.85rem; color: #666; white-space: nowrap; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 24px; padding: 28px 20px; max-width: 1200px; margin: 0 auto; }
+    .book-card { background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 3px 12px rgba(0,0,0,0.1); transition: transform 0.2s, box-shadow 0.2s; position: relative; }
+    .book-card:hover { transform: translateY(-4px); box-shadow: 0 8px 24px rgba(0,0,0,0.15); }
+    .book-card.sold { opacity: 0.55; }
+    .book-card.sold::after { content: "VENDIDO"; position: absolute; top: 12px; right: -28px; background: #c0392b; color: white; font-size: 0.7rem; font-weight: bold; padding: 4px 36px; transform: rotate(35deg); letter-spacing: 1px; }
+    .book-img { width: 100%; aspect-ratio: 3/4; object-fit: cover; object-position: center top; background: #e8dcc8; display: block; }
+    .book-img-placeholder { width: 100%; aspect-ratio: 3/4; background: linear-gradient(135deg, #e8dcc8, #d4c4a8); display: flex; align-items: center; justify-content: center; font-size: 4rem; color: #a08060; }
+    .book-info { padding: 14px; }
+    .book-title { font-size: 1rem; font-weight: bold; line-height: 1.3; margin-bottom: 4px; color: #2c1810; }
+    .book-author { font-size: 0.8rem; color: #888; margin-bottom: 12px; font-style: italic; }
+    .book-detail { font-size: 0.78rem; color: #777; margin-bottom: 10px; line-height: 1.4; }
+    .price-block { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+    .price-sale { font-size: 1.4rem; font-weight: bold; color: #2c7a3c; }
+    .price-original { font-size: 0.8rem; color: #aaa; text-decoration: line-through; }
+    .discount-badge { background: #e74c3c; color: white; font-size: 0.65rem; font-weight: bold; padding: 2px 6px; border-radius: 10px; }
+    .btn-cart { display: block; width: 100%; margin-top: 10px; padding: 8px; border: 2px solid #2c7a3c; border-radius: 6px; background: white; color: #2c7a3c; font-size: 0.85rem; font-weight: bold; cursor: pointer; transition: all 0.2s; font-family: inherit; }
+    .btn-cart:hover { background: #2c7a3c; color: white; }
+    .btn-cart.in-cart { background: #2c7a3c; color: white; }
+    .admin-btns { display: none; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+    .admin-btns.visible { display: flex; }
+    .btn-sold, .btn-delete, .btn-photo, .btn-edit { flex: 1; min-width: calc(50% - 3px); padding: 6px; border: none; border-radius: 5px; font-size: 0.75rem; cursor: pointer; font-weight: bold; transition: opacity 0.2s; }
+    .btn-sold { background: #f39c12; color: white; }
+    .btn-sold:hover { opacity: 0.85; }
+    .btn-delete { background: #e74c3c; color: white; }
+    .btn-delete:hover { opacity: 0.85; }
+    .btn-photo { background: #3498db; color: white; }
+    .btn-photo:hover { opacity: 0.85; }
+    .btn-edit { background: #27ae60; color: white; }
+    .btn-edit:hover { opacity: 0.85; }
+    #cart-float { position: fixed; bottom: 24px; right: 24px; background: #2c1810; color: white; border: none; border-radius: 50px; padding: 14px 20px; font-size: 1rem; font-weight: bold; cursor: pointer; box-shadow: 0 4px 16px rgba(0,0,0,0.3); z-index: 900; display: none; align-items: center; gap: 8px; transition: transform 0.2s; font-family: inherit; }
+    #cart-float:hover { transform: scale(1.05); }
+    #cart-badge { background: #e74c3c; color: white; border-radius: 50%; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; }
+    #cart-modal, #edit-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 999; align-items: center; justify-content: center; padding: 20px; }
+    #cart-modal .modal-box { background: white; border-radius: 12px; padding: 24px; width: 100%; max-width: 460px; box-shadow: 0 8px 32px rgba(0,0,0,0.3); max-height: 90vh; overflow-y: auto; }
+    #edit-modal .modal-box { background: white; border-radius: 12px; padding: 24px; width: 100%; max-width: 420px; box-shadow: 0 8px 32px rgba(0,0,0,0.3); }
+    #cart-modal h3, #edit-modal h3 { margin-bottom: 16px; color: #2c1810; font-size: 1.1rem; }
+    .cart-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #eee; gap: 10px; }
+    .cart-item-title { font-size: 0.9rem; font-weight: bold; color: #2c1810; flex: 1; }
+    .cart-item-author { font-size: 0.78rem; color: #888; }
+    .cart-item-price { font-size: 0.95rem; font-weight: bold; color: #2c7a3c; white-space: nowrap; }
+    .cart-item-remove { background: none; border: none; cursor: pointer; color: #e74c3c; font-size: 1rem; padding: 0 4px; }
+    .cart-total { display: flex; justify-content: space-between; font-weight: bold; font-size: 1rem; margin-top: 16px; padding-top: 12px; border-top: 2px solid #2c1810; color: #2c1810; }
+    .cart-actions { display: flex; flex-direction: column; gap: 10px; margin-top: 20px; }
+    .btn-whatsapp { padding: 12px; background: #25d366; color: white; border: none; border-radius: 8px; font-size: 0.95rem; font-weight: bold; cursor: pointer; font-family: inherit; }
+    .btn-whatsapp:hover { opacity: 0.9; }
+    .btn-email { padding: 12px; background: #3498db; color: white; border: none; border-radius: 8px; font-size: 0.95rem; font-weight: bold; cursor: pointer; font-family: inherit; }
+    .btn-email:hover { opacity: 0.9; }
+    .btn-cart-cancel { padding: 10px; background: #eee; color: #555; border: none; border-radius: 8px; font-size: 0.9rem; font-weight: bold; cursor: pointer; font-family: inherit; }
+    .btn-cart-cancel:hover { background: #ddd; }
+    #edit-modal label { display: block; margin-bottom: 12px; }
+    #edit-modal .field-label { font-size: 0.78rem; color: #666; font-weight: bold; display: block; margin-bottom: 4px; }
+    #edit-modal input, #edit-modal textarea { display: block; width: 100%; padding: 8px 12px; border: 1px solid #c9a87c; border-radius: 6px; font-size: 0.95rem; font-family: inherit; outline: none; }
+    #edit-modal input:focus, #edit-modal textarea:focus { border-color: #8b4513; }
+    #edit-modal textarea { resize: vertical; min-height: 80px; }
+    #edit-modal .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
+    #edit-modal .btn-save { flex: 1; padding: 10px; background: #2c7a3c; color: white; border: none; border-radius: 6px; font-size: 0.95rem; font-weight: bold; cursor: pointer; }
+    #edit-modal .btn-save:hover { opacity: 0.85; }
+    #edit-modal .btn-cancel { flex: 1; padding: 10px; background: #eee; color: #555; border: none; border-radius: 6px; font-size: 0.95rem; font-weight: bold; cursor: pointer; }
+    #edit-modal .btn-cancel:hover { background: #ddd; }
+    .empty-state { text-align: center; padding: 80px 20px; color: #999; grid-column: 1 / -1; }
+    .empty-state .icon { font-size: 4rem; margin-bottom: 16px; }
+    .empty-state p { font-size: 1.1rem; }
+    .admin-bar { background: #fff3cd; border: 1px solid #ffc107; padding: 10px 20px; text-align: center; font-size: 0.85rem; color: #856404; }
+    .admin-bar button { margin-left: 10px; padding: 4px 12px; border: 1px solid #856404; background: transparent; border-radius: 4px; cursor: pointer; color: #856404; font-weight: bold; }
+    @media (max-width: 480px) {
+      header h1 { font-size: 1.5rem; }
+      .grid { grid-template-columns: repeat(2, 1fr); gap: 12px; padding: 16px 10px; }
+      .book-info { padding: 10px; }
+      .book-title { font-size: 0.85rem; }
+      .price-sale { font-size: 1.1rem; }
     }
-
-    header {
-      background: #2c1810;
-      color: #fdf6ec;
-      padding: 16px 20px;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    header a {
-      color: #c9a87c;
-      text-decoration: none;
-      font-size: 1.3rem;
-    }
-
-    header h1 { font-size: 1.2rem; }
-
-    .card {
-      background: white;
-      margin: 16px;
-      border-radius: 14px;
-      padding: 20px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.08);
-    }
-
-    /* --- Foto --- */
-    .photo-area {
-      width: 100%;
-      aspect-ratio: 3/4;
-      max-height: 320px;
-      border: 2px dashed #c9a87c;
-      border-radius: 12px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      overflow: hidden;
-      position: relative;
-      background: #fdf6ec;
-      transition: border-color 0.2s;
-    }
-
-    .photo-area:hover { border-color: #8b4513; }
-
-    .photo-area img {
-      position: absolute;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-
-    .photo-area .overlay {
-      position: absolute;
-      inset: 0;
-      background: rgba(0,0,0,0.45);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      color: white;
-      font-size: 0.85rem;
-    }
-
-    .photo-placeholder { text-align: center; color: #a08060; }
-    .photo-placeholder .icon { font-size: 3rem; margin-bottom: 8px; }
-    .photo-placeholder p { font-size: 0.9rem; line-height: 1.4; }
-
-    #photo-input { display: none; }
-
-    /* --- Busqueda --- */
-    .section-title {
-      font-size: 0.75rem;
-      font-weight: 700;
-      color: #888;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      margin-bottom: 10px;
-    }
-
-    .search-row {
-      display: flex;
-      gap: 8px;
-    }
-
-    .search-row input {
-      flex: 1;
-      padding: 12px 14px;
-      border: 1.5px solid #ddd;
-      border-radius: 10px;
-      font-size: 1rem;
-      outline: none;
-      transition: border-color 0.2s;
-    }
-
-    .search-row input:focus { border-color: #8b4513; }
-
-    .btn-search {
-      padding: 12px 16px;
-      background: #2c1810;
-      color: white;
-      border: none;
-      border-radius: 10px;
-      font-size: 0.9rem;
-      font-weight: bold;
-      cursor: pointer;
-      white-space: nowrap;
-      transition: opacity 0.2s;
-    }
-
-    .btn-search:disabled { opacity: 0.5; }
-
-    /* --- Resultado de busqueda --- */
-    #lookup-result {
-      margin-top: 12px;
-      padding: 12px;
-      border-radius: 10px;
-      font-size: 0.9rem;
-      display: none;
-    }
-
-    #lookup-result.success {
-      background: #e8f5e9;
-      border: 1px solid #a5d6a7;
-      color: #2e7d32;
-    }
-
-    #lookup-result.warning {
-      background: #fff8e1;
-      border: 1px solid #ffe082;
-      color: #f57f17;
-    }
-
-    /* --- Campos del libro --- */
-    .field { margin-bottom: 14px; }
-
-    .field label {
-      display: block;
-      font-size: 0.78rem;
-      font-weight: 700;
-      color: #555;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      margin-bottom: 6px;
-    }
-
-    .field input {
-      width: 100%;
-      padding: 12px 14px;
-      border: 1.5px solid #ddd;
-      border-radius: 10px;
-      font-size: 1rem;
-      outline: none;
-      transition: border-color 0.2s;
-      background: white;
-    }
-
-    .field input:focus { border-color: #8b4513; }
-    .field input[readonly] { background: #f8f8f8; color: #555; }
-
-    .price-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-    }
-
-    .price-highlight {
-      border-color: #2c7a3c !important;
-      background: #f1fbf3 !important;
-      font-weight: bold;
-      color: #2c7a3c !important;
-      font-size: 1.1rem !important;
-    }
-
-    /* --- Boton guardar --- */
-    .btn-save {
-      width: 100%;
-      padding: 16px;
-      background: #2c7a3c;
-      color: white;
-      border: none;
-      border-radius: 12px;
-      font-size: 1.1rem;
-      font-weight: bold;
-      cursor: pointer;
-      transition: opacity 0.2s, transform 0.1s;
-      letter-spacing: 0.5px;
-    }
-
-    .btn-save:active { transform: scale(0.98); }
-    .btn-save:disabled { background: #aaa; cursor: not-allowed; }
-
-    /* --- Toast --- */
-    #toast {
-      position: fixed;
-      bottom: 30px;
-      left: 50%;
-      transform: translateX(-50%) translateY(100px);
-      background: #2c7a3c;
-      color: white;
-      padding: 14px 28px;
-      border-radius: 30px;
-      font-size: 1rem;
-      font-weight: bold;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.25);
-      transition: transform 0.3s;
-      z-index: 999;
-      white-space: nowrap;
-    }
-
-    #toast.show { transform: translateX(-50%) translateY(0); }
-    #toast.error { background: #c0392b; }
-
-    /* --- Loading spinner --- */
-    .spinner {
-      display: inline-block;
-      width: 16px;
-      height: 16px;
-      border: 2px solid rgba(255,255,255,0.4);
-      border-top-color: white;
-      border-radius: 50%;
-      animation: spin 0.6s linear infinite;
-      vertical-align: middle;
-      margin-right: 6px;
-    }
-
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    .divider {
-      height: 1px;
-      background: #eee;
-      margin: 16px 0;
-    }
-
-    /* Login overlay */
-    #login-overlay {
-      position: fixed;
-      inset: 0;
-      background: #2c1810;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 9999;
-    }
-
-    #login-box {
-      background: white;
-      border-radius: 16px;
-      padding: 36px 28px;
-      width: 90%;
-      max-width: 340px;
-      text-align: center;
-    }
-
-    #login-box h2 {
-      font-size: 1.3rem;
-      color: #2c1810;
-      margin-bottom: 6px;
-    }
-
-    #login-box p {
-      color: #888;
-      font-size: 0.85rem;
-      margin-bottom: 20px;
-    }
-
-    #login-pw {
-      width: 100%;
-      padding: 13px 16px;
-      border: 1.5px solid #ddd;
-      border-radius: 10px;
-      font-size: 1.1rem;
-      text-align: center;
-      letter-spacing: 4px;
-      outline: none;
-      margin-bottom: 12px;
-    }
-
-    #login-pw:focus { border-color: #8b4513; }
-
-    #login-error {
-      color: #c0392b;
-      font-size: 0.85rem;
-      margin-bottom: 10px;
-      min-height: 18px;
-    }
-
-    #login-btn {
-      width: 100%;
-      padding: 13px;
-      background: #2c1810;
-      color: white;
-      border: none;
-      border-radius: 10px;
-      font-size: 1rem;
-      font-weight: bold;
-      cursor: pointer;
-    }
-
-    #login-btn:disabled { opacity: 0.6; }
   </style>
 </head>
 <body>
 
-<!-- Pantalla de login -->
-<div id="login-overlay">
-  <div id="login-box">
-    <h2>Administrador</h2>
-    <p>Ingresa la contrasena para agregar libros</p>
-    <input type="password" id="login-pw" placeholder="••••••••"
-           onkeydown="if(event.key==='Enter') doLogin()">
-    <div id="login-error"></div>
-    <button id="login-btn" onclick="doLogin()">Entrar</button>
-  </div>
-</div>
-
 <header>
-  <a href="/">←</a>
-  <h1>Agregar libro</h1>
+  <h1>📚 Mis Libros</h1>
+  <p>Libros usados en excelente estado</p>
 </header>
 
-<!-- Foto -->
-<div class="card">
-  <div class="section-title">Foto del libro</div>
-  <div class="photo-area" id="photo-area" onclick="document.getElementById('photo-input').click()">
-    <div class="photo-placeholder">
-      <div class="icon">📷</div>
-      <p>Toca para sacar foto<br>o elegir de la galeria</p>
-    </div>
-  </div>
-  <input type="file" id="photo-input" accept="image/*" capture="environment" onchange="previewPhoto(this)">
+<div class="top-bar">
+  <span id="book-count">Cargando...</span>
+  <a href="/admin.html">+ Agregar libro</a>
 </div>
 
-<!-- Busqueda automatica -->
-<div class="card">
-  <div class="section-title">Buscar precio en internet</div>
-  <div class="search-row">
-    <input type="text" id="search-input" placeholder="Nombre del libro..."
-           onkeydown="if(event.key==='Enter') searchBook()">
-    <button class="btn-search" id="btn-search" onclick="searchBook()">Buscar</button>
-  </div>
-  <div id="lookup-result"></div>
+<div id="admin-bar" class="admin-bar" style="display:none">
+  Modo administrador activo — puedes marcar libros como vendidos o eliminarlos
+  <button onclick="toggleAdmin()">Salir</button>
 </div>
 
-<!-- Datos del libro -->
-<div class="card">
-  <div class="section-title">Datos del libro</div>
+<div class="filters">
+  <input type="text" id="search" placeholder="Buscar por titulo o autor..." oninput="renderBooks()">
+</div>
 
-  <div class="field">
-    <label>Titulo *</label>
-    <input type="text" id="title" placeholder="Nombre del libro">
-  </div>
+<div class="grid" id="grid"></div>
 
-  <div class="field">
-    <label>Autor</label>
-    <input type="text" id="author" placeholder="Nombre del autor">
-  </div>
+<button id="cart-float" onclick="openCart()">
+  🛒 Ver selección
+  <span id="cart-badge">0</span>
+</button>
 
-  <div class="divider"></div>
-
-  <div class="section-title">Precio</div>
-  <div class="price-row">
-    <div class="field">
-      <label>Precio internet</label>
-      <input type="number" id="original-price" placeholder="0"
-             oninput="calcDiscount()" step="0.01">
+<div id="cart-modal">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <h3>📦 Tu selección</h3>
+    <div id="cart-items"></div>
+    <div class="cart-total">
+      <span>Total estimado</span>
+      <span id="cart-total-price"></span>
     </div>
-    <div class="field">
-      <label>Tu precio (-10%)</label>
-      <input type="number" id="sale-price" placeholder="0"
-             class="price-highlight" step="0.01">
+    <div class="cart-actions">
+      <button class="btn-whatsapp" onclick="sendWhatsApp()">💬 Enviar por WhatsApp</button>
+      <button class="btn-email" onclick="sendEmail()">✉️ Enviar por Email</button>
+      <button class="btn-cart-cancel" onclick="closeCart()">Cerrar</button>
     </div>
   </div>
 </div>
 
-<!-- Guardar -->
-<div style="padding: 0 16px;">
-  <button class="btn-save" id="btn-save" onclick="saveBook()">Guardar libro</button>
+<div id="edit-modal">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <h3>Editar libro</h3>
+    <label>
+      <span class="field-label">TÍTULO</span>
+      <input id="edit-title" type="text" placeholder="Título del libro">
+    </label>
+    <label>
+      <span class="field-label">AUTOR</span>
+      <input id="edit-author" type="text" placeholder="Autor">
+    </label>
+    <label>
+      <span class="field-label">DETALLE</span>
+      <textarea id="edit-detail" placeholder="Descripción, estado, notas..."></textarea>
+    </label>
+    <label>
+      <span class="field-label">PRECIO ($)</span>
+      <input id="edit-price" type="number" min="0" step="1" placeholder="0">
+    </label>
+    <div class="modal-actions">
+      <button class="btn-save" onclick="saveEdit()">Guardar</button>
+      <button class="btn-cancel" onclick="closeEdit()">Cancelar</button>
+    </div>
+  </div>
 </div>
-
-<div id="toast"></div>
 
 <script>
+  let allBooks = [];
+  let adminMode = false;
   let adminPassword = '';
+  let cart = [];
 
-  async function doLogin() {
-    const pw = document.getElementById('login-pw').value;
-    if (!pw) return;
-
-    const btn = document.getElementById('login-btn');
-    btn.disabled = true;
-    btn.textContent = 'Verificando...';
-    document.getElementById('login-error').textContent = '';
-
-    try {
-      const res = await fetch('/api/verify', { headers: { 'X-Admin-Password': pw } });
-      if (res.ok) {
-        adminPassword = pw;
-        document.getElementById('login-overlay').style.display = 'none';
-      } else {
-        document.getElementById('login-error').textContent = 'Contrasena incorrecta';
-        document.getElementById('login-pw').value = '';
-        document.getElementById('login-pw').focus();
-      }
-    } catch(e) {
-      document.getElementById('login-error').textContent = 'Error de conexion, intenta de nuevo';
+  document.querySelector('header h1').addEventListener('dblclick', () => {
+    if (!adminMode) {
+      const pw = prompt('Contrasena de administrador:');
+      if (!pw) return;
+      adminPassword = pw;
     }
-
-    btn.disabled = false;
-    btn.textContent = 'Entrar';
-  }
-
-  // Focus automatico en el campo de contrasena
-  window.addEventListener('load', () => {
-    document.getElementById('login-pw').focus();
+    adminMode = !adminMode;
+    document.getElementById('admin-bar').style.display = adminMode ? 'block' : 'none';
+    renderBooks();
   });
 
-  let photoBase64 = null; // data URI comprimida
+  function toggleAdmin() {
+    adminMode = false;
+    document.getElementById('admin-bar').style.display = 'none';
+    renderBooks();
+  }
 
-  // Comprime la imagen con Canvas y la convierte a base64
-  function compressImage(file, maxWidth = 900, quality = 0.82) {
-    return new Promise((resolve) => {
+  async function loadBooks() {
+    const res = await fetch('/api/books');
+    allBooks = await res.json();
+    renderBooks();
+  }
+
+  function renderBooks() {
+    const q = document.getElementById('search').value.toLowerCase().trim();
+    let books = allBooks;
+    if (q) {
+      books = books.filter(b =>
+        b.title.toLowerCase().includes(q) ||
+        (b.author && b.author.toLowerCase().includes(q))
+      );
+    }
+    const available = books.filter(b => !b.sold);
+    const sold = books.filter(b => b.sold);
+    const sorted = [...available, ...sold];
+    const count = allBooks.filter(b => !b.sold).length;
+    document.getElementById('book-count').textContent =
+      count === 0 ? 'Sin libros disponibles' :
+      count === 1 ? '1 libro disponible' :
+      `${count} libros disponibles`;
+    const grid = document.getElementById('grid');
+    if (sorted.length === 0) {
+      grid.innerHTML = `<div class="empty-state"><div class="icon">📖</div><p>${q ? 'No se encontraron libros con esa busqueda' : 'Todavia no hay libros cargados'}</p></div>`;
+      return;
+    }
+    grid.innerHTML = sorted.map(book => `
+      <div class="book-card ${book.sold ? 'sold' : ''}">
+        ${book.photo
+          ? `<img class="book-img" src="${book.photo}" alt="${escHtml(book.title)}" loading="lazy">`
+          : `<div class="book-img-placeholder">📚</div>`}
+        <div class="book-info">
+          <div class="book-title">${escHtml(book.title)}</div>
+          ${book.author ? `<div class="book-author">${escHtml(book.author)}</div>` : ''}
+          ${book.detail ? `<div class="book-detail">${escHtml(book.detail)}</div>` : ''}
+          <div class="price-block">
+            <span class="price-sale">${formatPrice(book.price)}</span>
+            ${book.originalPrice
+              ? `<span class="price-original">${formatPrice(book.originalPrice)}</span><span class="discount-badge">-10%</span>`
+              : ''}
+          </div>
+          ${!book.sold ? `<button class="btn-cart ${cart.includes(book.id) ? 'in-cart' : ''}" onclick="toggleCart('${book.id}')">
+            ${cart.includes(book.id) ? '✓ Seleccionado' : '🛒 Lo quiero'}
+          </button>` : ''}
+          <div class="admin-btns ${adminMode ? 'visible' : ''}">
+            <button class="btn-edit" onclick="editBook('${book.id}')">✏️ Editar</button>
+            <button class="btn-photo" onclick="changePhoto('${book.id}')">📷 Foto</button>
+            <button class="btn-sold" onclick="markSold('${book.id}', ${!book.sold})">
+              ${book.sold ? '↩ Disponible' : '✓ Vendido'}
+            </button>
+            <button class="btn-delete" onclick="deleteBook('${book.id}')">Eliminar</button>
+          </div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function toggleCart(id) {
+    const idx = cart.indexOf(id);
+    if (idx === -1) cart.push(id);
+    else cart.splice(idx, 1);
+    updateCartFloat();
+    renderBooks();
+  }
+
+  function updateCartFloat() {
+    const btn = document.getElementById('cart-float');
+    const badge = document.getElementById('cart-badge');
+    badge.textContent = cart.length;
+    btn.style.display = cart.length > 0 ? 'flex' : 'none';
+  }
+
+  function openCart() {
+    const items = cart.map(id => allBooks.find(b => b.id === id)).filter(Boolean);
+    const total = items.reduce((s, b) => s + b.price, 0);
+    document.getElementById('cart-items').innerHTML = items.map(b => `
+      <div class="cart-item">
+        <div>
+          <div class="cart-item-title">${escHtml(b.title)}</div>
+          ${b.author ? `<div class="cart-item-author">${escHtml(b.author)}</div>` : ''}
+        </div>
+        <div class="cart-item-price">${formatPrice(b.price)}</div>
+        <button class="cart-item-remove" onclick="toggleCart('${b.id}'); openCart();">✕</button>
+      </div>
+    `).join('');
+    document.getElementById('cart-total-price').textContent = formatPrice(total);
+    document.getElementById('cart-modal').style.display = 'flex';
+  }
+
+  function closeCart() { document.getElementById('cart-modal').style.display = 'none'; }
+
+  document.getElementById('cart-modal').addEventListener('click', function(e) {
+    if (e.target === this) closeCart();
+  });
+
+  function buildMessage() {
+    const items = cart.map(id => allBooks.find(b => b.id === id)).filter(Boolean);
+    const total = items.reduce((s, b) => s + b.price, 0);
+    const lines = items.map(b => `- ${b.title}${b.author ? ' (' + b.author + ')' : ''}: ${formatPrice(b.price)}`).join('\n');
+    return `Hola! Me interesan estos libros:\n${lines}\n\nTotal: ${formatPrice(total)}`;
+  }
+
+  function sendWhatsApp() {
+    window.open(`https://wa.me/56997423516?text=${encodeURIComponent(buildMessage())}`, '_blank');
+  }
+
+  function sendEmail() {
+    window.open(`mailto:matis.lib@gmail.com?subject=${encodeURIComponent('Consulta por libros')}&body=${encodeURIComponent(buildMessage())}`, '_blank');
+  }
+
+  async function markSold(id, sold) {
+    const res = await fetch(`/api/books/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', 'X-Admin-Password': adminPassword },
+      body: JSON.stringify({ sold })
+    });
+    if (res.status === 403) { alert('Contrasena incorrecta'); return; }
+    await loadBooks();
+  }
+
+  async function deleteBook(id) {
+    if (!confirm('Eliminar este libro?')) return;
+    const res = await fetch(`/api/books/${id}`, {
+      method: 'DELETE',
+      headers: { 'X-Admin-Password': adminPassword }
+    });
+    if (res.status === 403) { alert('Contrasena incorrecta'); return; }
+    allBooks = allBooks.filter(b => b.id !== id);
+    renderBooks();
+  }
+
+  const photoInput = document.createElement('input');
+  photoInput.type = 'file';
+  photoInput.accept = 'image/*';
+  document.body.appendChild(photoInput);
+
+  function compressImage(file) {
+    return new Promise(resolve => {
       const reader = new FileReader();
       reader.onload = e => {
         const img = new Image();
         img.onload = () => {
-          const scale = Math.min(1, maxWidth / img.width);
+          const scale = Math.min(1, 900 / img.width);
           const w = Math.round(img.width * scale);
           const h = Math.round(img.height * scale);
           const canvas = document.createElement('canvas');
-          canvas.width = w;
-          canvas.height = h;
+          canvas.width = w; canvas.height = h;
           canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-          resolve(canvas.toDataURL('image/jpeg', quality));
+          resolve(canvas.toDataURL('image/jpeg', 0.82));
         };
         img.src = e.target.result;
       };
@@ -462,151 +347,74 @@
     });
   }
 
-  async function previewPhoto(input) {
-    const file = input.files[0];
-    if (!file) return;
-
-    const area = document.getElementById('photo-area');
-    area.innerHTML = `<div class="photo-placeholder"><div class="icon"><span class="spinner" style="border-color:rgba(160,128,96,.4);border-top-color:#a08060;width:32px;height:32px"></span></div></div>`;
-
-    photoBase64 = await compressImage(file);
-
-    area.innerHTML = `
-      <img src="${photoBase64}" alt="preview">
-      <div class="overlay">
-        <span style="font-size:1.5rem">📷</span>
-        <span>Cambiar foto</span>
-      </div>
-    `;
-    area.onclick = () => document.getElementById('photo-input').click();
-  }
-
-  async function searchBook() {
-    const q = document.getElementById('search-input').value.trim();
-    if (!q) return;
-
-    const btn = document.getElementById('btn-search');
-    btn.disabled = true;
-    btn.innerHTML = '<span class="spinner"></span>';
-
-    const resultEl = document.getElementById('lookup-result');
-    resultEl.style.display = 'none';
-
-    try {
-      const res = await fetch(`/api/lookup?q=${encodeURIComponent(q)}`);
-      const data = await res.json();
-
-      if (data.title) document.getElementById('title').value = data.title;
-      if (data.author) document.getElementById('author').value = data.author;
-
-      if (data.found && data.price) {
-        const originalPrice = data.price;
-        const salePrice = originalPrice * 0.90;
-        document.getElementById('original-price').value = originalPrice.toFixed(2);
-        document.getElementById('sale-price').value = salePrice.toFixed(2);
-        resultEl.className = 'success';
-        resultEl.innerHTML = `Precio encontrado: <strong>${data.currency || '$'}${originalPrice.toFixed(2)}</strong> &rarr; Tu precio: <strong>$${salePrice.toFixed(2)}</strong>`;
-        resultEl.style.display = 'block';
-      } else {
-        resultEl.className = 'warning';
-        resultEl.innerHTML = `No se encontro precio automatico. Ingresalo manualmente.`;
-        resultEl.style.display = 'block';
-      }
-    } catch(e) {
-      resultEl.className = 'warning';
-      resultEl.innerHTML = 'Error al buscar. Ingresa el precio manualmente.';
-      resultEl.style.display = 'block';
-    }
-
-    btn.disabled = false;
-    btn.textContent = 'Buscar';
-  }
-
-  function calcDiscount() {
-    const orig = parseFloat(document.getElementById('original-price').value);
-    if (!isNaN(orig) && orig > 0) {
-      document.getElementById('sale-price').value = (orig * 0.90).toFixed(2);
-    }
-  }
-
-  function resetForm() {
-    document.getElementById('title').value = '';
-    document.getElementById('author').value = '';
-    document.getElementById('original-price').value = '';
-    document.getElementById('sale-price').value = '';
-    document.getElementById('search-input').value = '';
-    document.getElementById('lookup-result').style.display = 'none';
-    document.getElementById('photo-input').value = '';
-    const area = document.getElementById('photo-area');
-    area.innerHTML = `
-      <div class="photo-placeholder">
-        <div class="icon">📷</div>
-        <p>Toca para sacar foto<br>o elegir de la galeria</p>
-      </div>
-    `;
-    area.onclick = () => document.getElementById('photo-input').click();
-    photoBase64 = null;
-  }
-
-  async function saveBook() {
-    const title = document.getElementById('title').value.trim();
-    const author = document.getElementById('author').value.trim();
-    const originalPrice = document.getElementById('original-price').value;
-    const price = document.getElementById('sale-price').value;
-
-    if (!title) { showToast('Escribe el titulo del libro', true); return; }
-    if (!price)  { showToast('Ingresa el precio de venta', true); return; }
-
-    const btn = document.getElementById('btn-save');
-    btn.disabled = true;
-    btn.innerHTML = '<span class="spinner"></span> Guardando...';
-
-    try {
-      const res = await fetch('/api/books', {
-        method: 'POST',
+  function changePhoto(id) {
+    photoInput.onchange = async () => {
+      const file = photoInput.files[0];
+      if (!file) return;
+      const photo = await compressImage(file);
+      const res = await fetch(`/api/books/${id}`, {
+        method: 'PATCH',
         headers: { 'Content-Type': 'application/json', 'X-Admin-Password': adminPassword },
-        body: JSON.stringify({
-          title,
-          author,
-          originalPrice: originalPrice || null,
-          price,
-          photo: photoBase64 || null
-        })
+        body: JSON.stringify({ photo })
       });
-      const data = await res.json();
-
-      if (res.status === 403) {
-        sessionStorage.removeItem('adminPassword');
-        showToast('Contrasena incorrecta', true);
-        setTimeout(() => location.reload(), 1500);
-        return;
-      }
-      if (data.success) {
-        showToast('Libro guardado!');
-        setTimeout(resetForm, 1200);
-      } else {
-        showToast('Error al guardar', true);
-      }
-    } catch(e) {
-      showToast('Error de conexion', true);
-    }
-
-    btn.disabled = false;
-    btn.textContent = 'Guardar libro';
+      if (res.status === 403) { alert('Contrasena incorrecta'); return; }
+      await loadBooks();
+      photoInput.value = '';
+    };
+    photoInput.click();
   }
 
-  function showToast(msg, isError = false) {
-    const t = document.getElementById('toast');
-    t.textContent = msg;
-    t.className = isError ? 'error show' : 'show';
-    setTimeout(() => t.className = isError ? 'error' : '', 3000);
-  }
+  let editingId = null;
 
-  document.getElementById('title').addEventListener('blur', () => {
-    const title = document.getElementById('title').value.trim();
-    const searchInput = document.getElementById('search-input');
-    if (title && !searchInput.value) searchInput.value = title;
+  document.getElementById('edit-modal').addEventListener('click', function(e) {
+    if (e.target === this) closeEdit();
   });
+
+  function editBook(id) {
+    const book = allBooks.find(b => b.id === id);
+    if (!book) return;
+    editingId = id;
+    document.getElementById('edit-title').value = book.title || '';
+    document.getElementById('edit-author').value = book.author || '';
+    document.getElementById('edit-detail').value = book.detail || '';
+    document.getElementById('edit-price').value = book.price != null ? book.price : '';
+    document.getElementById('edit-modal').style.display = 'flex';
+    document.getElementById('edit-title').focus();
+  }
+
+  function closeEdit() {
+    document.getElementById('edit-modal').style.display = 'none';
+    editingId = null;
+  }
+
+  async function saveEdit() {
+    if (!editingId) return;
+    const title = document.getElementById('edit-title').value.trim();
+    const author = document.getElementById('edit-author').value.trim();
+    const detail = document.getElementById('edit-detail').value.trim();
+    const price = parseFloat(document.getElementById('edit-price').value);
+    if (!title) { alert('El título no puede estar vacío'); return; }
+    if (isNaN(price) || price < 0) { alert('Ingresa un precio válido'); return; }
+    const res = await fetch(`/api/books/${editingId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', 'X-Admin-Password': adminPassword },
+      body: JSON.stringify({ title, author, detail, price })
+    });
+    if (res.status === 403) { alert('Contraseña incorrecta'); return; }
+    closeEdit();
+    await loadBooks();
+  }
+
+  function formatPrice(p) {
+    if (p == null) return '';
+    return '$' + p.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  }
+
+  function escHtml(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  loadBooks();
 
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js').catch(() => {});
