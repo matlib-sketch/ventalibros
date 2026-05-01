@@ -226,13 +226,12 @@
           <div class="book-title">${escHtml(book.title)}</div>
           ${book.author ? `<div class="book-author">${escHtml(book.author)}</div>` : ''}
           ${book.detail ? `<div class="book-detail">${escHtml(book.detail)}</div>` : ''}
-          <div class="price-block">
-            <span class="price-sale">${formatPrice(book.price)}</span>
-            ${book.originalPrice
-              ? `<span class="price-original">${formatPrice(book.originalPrice)}</span><span class="discount-badge">-10%</span>`
-              : ''}
+                    <div class="price-block">
+            ${book.price != null
+              ? `<span class="price-sale">${formatPrice(book.price)}</span>${book.originalPrice ? `<span class="price-original">${formatPrice(book.originalPrice)}</span><span class="discount-badge">-10%</span>` : ''}`
+              : `<span style="color:#aaa;font-size:0.85rem;font-style:italic">Sin precio aún</span>`}
           </div>
-          ${!book.sold ? `<button class="btn-cart ${cart.includes(book.id) ? 'in-cart' : ''}" onclick="toggleCart('${book.id}')">
+          ${!book.sold && book.price != null ? `<button class="btn-cart ${cart.includes(book.id) ? 'in-cart' : ''}" onclick="toggleCart('${book.id}')">
             ${cart.includes(book.id) ? '✓ Seleccionado' : '🛒 Lo quiero'}
           </button>` : ''}
           <div class="admin-btns ${adminMode ? 'visible' : ''}">
