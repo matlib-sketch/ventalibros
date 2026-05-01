@@ -187,7 +187,7 @@ def add_book():
     if err: return err
 
     data = request.get_json(force=True, silent=True) or {}
-        title = (data.get('title') or '').strip()
+title = (data.get('title') or '').strip()
     if not title:
         return jsonify({'error': 'Faltan datos'}), 400
     price_raw = data.get('price')
