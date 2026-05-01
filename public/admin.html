@@ -126,7 +126,7 @@
 
 <div class="top-bar">
   <span id="book-count">Cargando...</span>
-    <a href="#" onclick="if(adminMode){ event.preventDefault(); openAddModal(); } else { event.preventDefault(); document.querySelector('header h1').dispatchEvent(new MouseEvent('dblclick')); }">+ Agregar libro</a>
+      <a href="#" onclick="handleAddBookClick(event)">+ Agregar libro</a>
 </div>
 
 <div id="admin-bar" class="admin-bar" style="display:none">
@@ -229,6 +229,25 @@
 </div>
 
 <script>
+    function handleAddBookClick(e) {
+    e.preventDefault();
+    if (!adminMode) {
+      const pw = prompt('Contrasena de administrador:');
+      if (!pw) return;
+      fetch('/api/verify', { headers: { 'X-Admin-Password': pw } })
+        .then(function(res) {
+          if (res.status === 403) { alert('Contrasena incorrecta'); return; }
+          adminPassword = pw;
+          adminMode = true;
+          document.getElementById('admin-bar').style.display = 'flex';
+          renderBooks();
+          openAddModal();
+        });
+    } else {
+      openAddModal();
+    }
+  }
+
   let allBooks = [];
   let adminMode = false;
   let adminPassword = '';
