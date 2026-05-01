@@ -42,6 +42,7 @@ def init_db():
                 )
             """)
             cur.execute("ALTER TABLE books ADD COLUMN IF NOT EXISTS detail TEXT DEFAULT ''")
+            cur.execute("ALTER TABLE books ALTER COLUMN price DROP NOT NULL")
         conn.commit()
 
 def read_books():
@@ -186,10 +187,14 @@ def add_book():
     if err: return err
 
     data = request.get_json(force=True, silent=True) or {}
-    title = (data.get('title') or '').strip()
-    price = data.get('price')
-    if not title or price is None:
+        title = (data.get('title') or '').strip()
+    if not title:
         return jsonify({'error': 'Faltan datos'}), 400
+    price_raw = data.get('price')
+    try:
+        price = float(price_raw) if price_raw not in (None, '') else None
+    except (ValueError, TypeError):
+        price = None
 
     try:
         orig = float(data.get('originalPrice') or 0)
@@ -203,7 +208,7 @@ def add_book():
         'author':        (data.get('author') or '').strip(),
         'detail':        (data.get('detail') or '').strip(),
         'originalPrice': orig if orig > 0 else None,
-        'price':         float(price),
+        'price':         price,
         'photo':         data.get('photo') or None,
         'sold':          False,
         'createdAt':     datetime.datetime.utcnow().isoformat(),
