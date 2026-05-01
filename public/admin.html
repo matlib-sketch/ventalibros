@@ -126,7 +126,7 @@
 
 <div class="top-bar">
   <span id="book-count">Cargando...</span>
-  <a href="/admin.html">+ Agregar libro</a>
+    <a href="#" onclick="if(adminMode){ event.preventDefault(); openAddModal(); } else { event.preventDefault(); document.querySelector('header h1').dispatchEvent(new MouseEvent('dblclick')); }">+ Agregar libro</a>
 </div>
 
 <div id="admin-bar" class="admin-bar" style="display:none">
