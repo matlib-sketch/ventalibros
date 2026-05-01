@@ -85,8 +85,29 @@
     .empty-state { text-align: center; padding: 80px 20px; color: #999; grid-column: 1 / -1; }
     .empty-state .icon { font-size: 4rem; margin-bottom: 16px; }
     .empty-state p { font-size: 1.1rem; }
-    .admin-bar { background: #fff3cd; border: 1px solid #ffc107; padding: 10px 20px; text-align: center; font-size: 0.85rem; color: #856404; }
-    .admin-bar button { margin-left: 10px; padding: 4px 12px; border: 1px solid #856404; background: transparent; border-radius: 4px; cursor: pointer; color: #856404; font-weight: bold; }
+    .admin-bar { background: #fff3cd; border: 1px solid #ffc107; padding: 10px 20px; font-size: 0.85rem; color: #856404; display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; }
+    .admin-bar button { padding: 4px 12px; border: 1px solid #856404; background: transparent; border-radius: 4px; cursor: pointer; color: #856404; font-weight: bold; }
+    .btn-add-book { background: #2c7a3c !important; color: white !important; border-color: #2c7a3c !important; padding: 6px 16px !important; font-size: 0.9rem !important; }
+    .btn-add-book:hover { opacity: 0.85; }
+    #add-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 999; align-items: center; justify-content: center; padding: 20px; }
+    #add-modal .modal-box { background: white; border-radius: 12px; padding: 24px; width: 100%; max-width: 460px; box-shadow: 0 8px 32px rgba(0,0,0,0.3); max-height: 90vh; overflow-y: auto; }
+    #add-modal h3 { margin-bottom: 16px; color: #2c1810; font-size: 1.1rem; }
+    #add-modal label { display: block; margin-bottom: 12px; }
+    #add-modal .field-label { font-size: 0.78rem; color: #666; font-weight: bold; display: block; margin-bottom: 4px; }
+    #add-modal input, #add-modal textarea { display: block; width: 100%; padding: 8px 12px; border: 1px solid #c9a87c; border-radius: 6px; font-size: 0.95rem; font-family: inherit; outline: none; }
+    #add-modal input:focus, #add-modal textarea:focus { border-color: #8b4513; }
+    #add-modal textarea { resize: vertical; min-height: 70px; }
+    .lookup-row { display: flex; gap: 8px; margin-bottom: 16px; }
+    .lookup-row input { flex: 1; }
+    .btn-lookup { padding: 8px 14px; background: #3498db; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 0.85rem; font-weight: bold; white-space: nowrap; }
+    .btn-lookup:hover { opacity: 0.85; }
+    .lookup-status { font-size: 0.78rem; color: #666; margin-bottom: 12px; min-height: 18px; }
+    #add-modal .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
+    #add-modal .btn-save { flex: 1; padding: 10px; background: #2c7a3c; color: white; border: none; border-radius: 6px; font-size: 0.95rem; font-weight: bold; cursor: pointer; }
+    #add-modal .btn-save:hover { opacity: 0.85; }
+    #add-modal .btn-cancel { flex: 1; padding: 10px; background: #eee; color: #555; border: none; border-radius: 6px; font-size: 0.95rem; font-weight: bold; cursor: pointer; }
+    #add-modal .btn-cancel:hover { background: #ddd; }
+    .photo-preview { width: 80px; height: 100px; object-fit: cover; border-radius: 6px; border: 1px solid #ddd; margin-top: 6px; display: none; }
     @media (max-width: 480px) {
       header h1 { font-size: 1.5rem; }
       .grid { grid-template-columns: repeat(2, 1fr); gap: 12px; padding: 16px 10px; }
@@ -109,7 +130,8 @@
 </div>
 
 <div id="admin-bar" class="admin-bar" style="display:none">
-  Modo administrador activo — puedes marcar libros como vendidos o eliminarlos
+  <span>Modo administrador activo</span>
+  <button class="btn-add-book" onclick="openAddModal()">+ Agregar libro</button>
   <button onclick="toggleAdmin()">Salir</button>
 </div>
 
@@ -136,6 +158,46 @@
       <button class="btn-whatsapp" onclick="sendWhatsApp()">💬 Enviar por WhatsApp</button>
       <button class="btn-email" onclick="sendEmail()">✉️ Enviar por Email</button>
       <button class="btn-cart-cancel" onclick="closeCart()">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<div id="add-modal">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <h3>➕ Agregar libro</h3>
+    <div class="lookup-row">
+      <input id="add-lookup" type="text" placeholder="Buscar por título o ISBN...">
+      <button class="btn-lookup" onclick="lookupForAdd()">Buscar</button>
+    </div>
+    <div id="lookup-status" class="lookup-status"></div>
+    <label>
+      <span class="field-label">TÍTULO *</span>
+      <input id="add-title" type="text" placeholder="Título del libro">
+    </label>
+    <label>
+      <span class="field-label">AUTOR</span>
+      <input id="add-author" type="text" placeholder="Nombre del autor">
+    </label>
+    <label>
+      <span class="field-label">DETALLE</span>
+      <textarea id="add-detail" placeholder="Estado, edición, notas..."></textarea>
+    </label>
+    <label>
+      <span class="field-label">PRECIO DE VENTA ($)</span>
+      <input id="add-price" type="number" min="0" step="1" placeholder="Dejar vacío = Sin precio aún">
+    </label>
+    <label>
+      <span class="field-label">PRECIO ORIGINAL ($)</span>
+      <input id="add-original-price" type="number" min="0" step="1" placeholder="Opcional">
+    </label>
+    <label>
+      <span class="field-label">FOTO</span>
+      <input id="add-photo-file" type="file" accept="image/*" onchange="previewAddPhoto(this)">
+      <img id="add-photo-preview" class="photo-preview" alt="Vista previa">
+    </label>
+    <div class="modal-actions">
+      <button class="btn-save" onclick="submitAddBook()">Guardar</button>
+      <button class="btn-cancel" onclick="closeAddModal()">Cancelar</button>
     </div>
   </div>
 </div>
@@ -172,14 +234,15 @@
   let adminPassword = '';
   let cart = [];
 
-  document.querySelector('header h1').addEventListener('dblclick', () => {
-    if (!adminMode) {
-      const pw = prompt('Contrasena de administrador:');
-      if (!pw) return;
-      adminPassword = pw;
-    }
-    adminMode = !adminMode;
-    document.getElementById('admin-bar').style.display = adminMode ? 'block' : 'none';
+  document.querySelector('header h1').addEventListener('dblclick', async () => {
+    if (adminMode) { toggleAdmin(); return; }
+    const pw = prompt('Contrasena de administrador:');
+    if (!pw) return;
+    const res = await fetch('/api/verify', { headers: { 'X-Admin-Password': pw } });
+    if (res.status === 403) { alert('Contrasena incorrecta'); return; }
+    adminPassword = pw;
+    adminMode = true;
+    document.getElementById('admin-bar').style.display = 'flex';
     renderBooks();
   });
 
@@ -227,12 +290,11 @@
           ${book.author ? `<div class="book-author">${escHtml(book.author)}</div>` : ''}
           ${book.detail ? `<div class="book-detail">${escHtml(book.detail)}</div>` : ''}
           <div class="price-block">
-            <span class="price-sale">${formatPrice(book.price)}</span>
-            ${book.originalPrice
-              ? `<span class="price-original">${formatPrice(book.originalPrice)}</span><span class="discount-badge">-10%</span>`
-              : ''}
+            ${book.price != null
+              ? `<span class="price-sale">${formatPrice(book.price)}</span>${book.originalPrice ? `<span class="price-original">${formatPrice(book.originalPrice)}</span><span class="discount-badge">-10%</span>` : ''}`
+              : `<span style="color:#aaa;font-size:0.85rem;font-style:italic">Sin precio aún</span>`}
           </div>
-          ${!book.sold ? `<button class="btn-cart ${cart.includes(book.id) ? 'in-cart' : ''}" onclick="toggleCart('${book.id}')">
+          ${!book.sold && book.price != null ? `<button class="btn-cart ${cart.includes(book.id) ? 'in-cart' : ''}" onclick="toggleCart('${book.id}')">
             ${cart.includes(book.id) ? '✓ Seleccionado' : '🛒 Lo quiero'}
           </button>` : ''}
           <div class="admin-btns ${adminMode ? 'visible' : ''}">
@@ -362,6 +424,92 @@
       photoInput.value = '';
     };
     photoInput.click();
+  }
+
+  let addPhotoData = null;
+
+  document.getElementById('add-modal').addEventListener('click', function(e) {
+    if (e.target === this) closeAddModal();
+  });
+
+  function openAddModal() {
+    document.getElementById('add-lookup').value = '';
+    document.getElementById('add-title').value = '';
+    document.getElementById('add-author').value = '';
+    document.getElementById('add-detail').value = '';
+    document.getElementById('add-price').value = '';
+    document.getElementById('add-original-price').value = '';
+    document.getElementById('add-photo-file').value = '';
+    document.getElementById('add-photo-preview').style.display = 'none';
+    document.getElementById('lookup-status').textContent = '';
+    addPhotoData = null;
+    document.getElementById('add-modal').style.display = 'flex';
+    document.getElementById('add-lookup').focus();
+  }
+
+  function closeAddModal() {
+    document.getElementById('add-modal').style.display = 'none';
+  }
+
+  async function lookupForAdd() {
+    const q = document.getElementById('add-lookup').value.trim();
+    if (!q) return;
+    const status = document.getElementById('lookup-status');
+    status.textContent = 'Buscando...';
+    try {
+      const res = await fetch('/api/lookup?q=' + encodeURIComponent(q));
+      const data = await res.json();
+      if (data.found || data.title) {
+        if (data.title) document.getElementById('add-title').value = data.title;
+        if (data.author) document.getElementById('add-author').value = data.author;
+        if (data.price) document.getElementById('add-original-price').value = Math.round(data.price);
+        status.textContent = data.found ? '✓ Información encontrada' : '✓ Título/autor encontrado';
+        status.style.color = '#2c7a3c';
+      } else {
+        status.textContent = 'No se encontró información. Completa los datos manualmente.';
+        status.style.color = '#888';
+      }
+    } catch {
+      status.textContent = 'Error al buscar. Completa los datos manualmente.';
+      status.style.color = '#e74c3c';
+    }
+  }
+
+  document.getElementById('add-lookup').addEventListener('keydown', e => {
+    if (e.key === 'Enter') lookupForAdd();
+  });
+
+  function previewAddPhoto(input) {
+    const file = input.files[0];
+    if (!file) return;
+    compressImage(file).then(data => {
+      addPhotoData = data;
+      const preview = document.getElementById('add-photo-preview');
+      preview.src = data;
+      preview.style.display = 'block';
+    });
+  }
+
+  async function submitAddBook() {
+    const title = document.getElementById('add-title').value.trim();
+    if (!title) { alert('El título es obligatorio'); return; }
+    const priceRaw = document.getElementById('add-price').value;
+    const price = priceRaw !== '' ? parseFloat(priceRaw) : null;
+    if (price !== null && (isNaN(price) || price < 0)) { alert('Ingresa un precio válido'); return; }
+    const author = document.getElementById('add-author').value.trim();
+    const detail = document.getElementById('add-detail').value.trim();
+    const origRaw = parseFloat(document.getElementById('add-original-price').value);
+    const originalPrice = isNaN(origRaw) ? null : origRaw;
+    const body = { title, author, detail, price, originalPrice, photo: addPhotoData || null };
+    const res = await fetch('/api/books', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Admin-Password': adminPassword },
+      body: JSON.stringify(body)
+    });
+    if (res.status === 403) { alert('Contraseña incorrecta'); return; }
+    if (!res.ok) { alert('Error al guardar el libro'); return; }
+    closeAddModal();
+    await loadBooks();
   }
 
   let editingId = null;
