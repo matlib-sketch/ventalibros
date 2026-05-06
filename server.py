@@ -1,10 +1,12 @@
 import os
 import json
 import uuid
+import base64
+import hashlib
 import urllib.request
 import urllib.parse
 from pathlib import Path
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, request, jsonify, send_from_directory, Response
 
 app = Flask(__name__, static_folder='public')
 
@@ -121,13 +123,26 @@ if DATABASE_URL:
 
 # ---------- static ----------
 
+# Archivos donde SIEMPRE queremos la version mas nueva. Si el navegador los cachea
+# por horas, los celulares se quedan con versiones viejas y la app se rompe en silencio.
+NO_CACHE_FILES = {'sw.js', 'index.html', 'admin.html'}
+
+def _no_cache(resp):
+    resp.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    resp.headers['Pragma'] = 'no-cache'
+    resp.headers['Expires'] = '0'
+    return resp
+
 @app.route('/')
 def index():
-    return send_from_directory('public', 'index.html')
+    return _no_cache(send_from_directory('public', 'index.html'))
 
 @app.route('/<path:filename>')
 def static_files(filename):
-    return send_from_directory('public', filename)
+    resp = send_from_directory('public', filename)
+    if filename in NO_CACHE_FILES:
+        return _no_cache(resp)
+    return resp
 
 # ---------- API ----------
 
@@ -137,9 +152,65 @@ def verify():
     if err: return err
     return jsonify({'ok': True})
 
+def _photo_version(photo):
+    """Hash corto del data URL — cambia si la foto cambia, asi el navegador refresca."""
+    if not photo:
+        return None
+    return hashlib.md5(photo[:300].encode('utf-8', errors='ignore')).hexdigest()[:8]
+
+def _strip_photo(b):
+    """Saca la foto del libro, deja solo flags livianos."""
+    out = {k: v for k, v in b.items() if k != 'photo'}
+    out['hasPhoto'] = bool(b.get('photo'))
+    out['photoVersion'] = _photo_version(b.get('photo'))
+    return out
+
+def _get_book_photo(book_id):
+    """Devuelve solo el data URL de la foto. Usado por /api/books/<id>/photo."""
+    if DATABASE_URL:
+        with get_conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT photo FROM books WHERE id=%s", (book_id,))
+                row = cur.fetchone()
+        return row[0] if row else None
+    else:
+        data_file = BASE_DIR / 'data' / 'books.json'
+        if not data_file.exists():
+            return None
+        try:
+            books = json.loads(data_file.read_text(encoding='utf-8'))
+            book = next((b for b in books if b['id'] == book_id), None)
+            return book.get('photo') if book else None
+        except Exception:
+            return None
+
 @app.get('/api/books')
 def get_books():
-    return jsonify(read_books())
+    # Devolvemos los libros SIN la foto en base64 (el listado pesa 100x menos).
+    # Cada foto se pide aparte por /api/books/<id>/photo.
+    books = read_books()
+    return jsonify([_strip_photo(b) for b in books])
+
+@app.get('/api/books/<book_id>/photo')
+def get_book_photo(book_id):
+    photo = _get_book_photo(book_id)
+    if not photo or not photo.startswith('data:'):
+        return '', 404
+    try:
+        header, b64 = photo.split(',', 1)
+        # header tipo "data:image/jpeg;base64"
+        mime = 'image/jpeg'
+        if ':' in header and ';' in header:
+            mime = header.split(':', 1)[1].split(';', 1)[0] or 'image/jpeg'
+        img_bytes = base64.b64decode(b64)
+    except Exception:
+        return '', 404
+
+    resp = Response(img_bytes, mimetype=mime)
+    # Cache largo: la URL incluye photoVersion como querystring, asi cualquier cambio
+    # de foto invalida la cache automaticamente.
+    resp.headers['Cache-Control'] = 'public, max-age=31536000, immutable'
+    return resp
 
 @app.get('/api/lookup')
 def lookup():
