@@ -1,6 +1,6 @@
 // Cambia este nombre cada vez que subas un cambio en HTML/JS importante.
 // Bumpea el numero al final.
-const CACHE = 'libros-v4';
+const CACHE = 'libros-v5';
 
 // Solo precacheamos cosas inmutables (icono, manifest).
 // Los HTML los pedimos siempre a la red para no quedarnos con versiones viejas.

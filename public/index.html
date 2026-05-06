@@ -22,6 +22,12 @@
     .filters { padding: 16px 20px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; background: #f5ead8; border-bottom: 1px solid #ddd; }
     .filters input { flex: 1; min-width: 160px; padding: 8px 14px; border: 1px solid #c9a87c; border-radius: 20px; font-size: 0.95rem; background: white; outline: none; }
     .filters input:focus { border-color: #8b4513; }
+    .tabs { display: flex; gap: 0; padding: 0 20px; background: #f5ead8; border-bottom: 1px solid #ddd; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .tab { flex: 1; min-width: 90px; padding: 14px 12px; border: none; background: transparent; color: #6b4a2b; font-size: 0.95rem; font-weight: bold; cursor: pointer; font-family: inherit; border-bottom: 3px solid transparent; transition: all 0.15s; white-space: nowrap; letter-spacing: 0.5px; }
+    .tab:hover { color: #2c1810; background: rgba(255,255,255,0.4); }
+    .tab.active { color: #2c1810; border-bottom-color: #2c1810; background: white; }
+    .tab .count { display: inline-block; margin-left: 6px; font-size: 0.75rem; color: #999; font-weight: normal; }
+    .tab.active .count { color: #2c7a3c; }
     #book-count { font-size: 0.85rem; color: #666; white-space: nowrap; }
     .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 24px; padding: 28px 20px; max-width: 1200px; margin: 0 auto; }
     .book-card { background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 3px 12px rgba(0,0,0,0.1); transition: transform 0.2s, box-shadow 0.2s; position: relative; }
@@ -82,6 +88,10 @@
     #edit-modal .btn-save:hover { opacity: 0.85; }
     #edit-modal .btn-cancel { flex: 1; padding: 10px; background: #eee; color: #555; border: none; border-radius: 6px; font-size: 0.95rem; font-weight: bold; cursor: pointer; }
     #edit-modal .btn-cancel:hover { background: #ddd; }
+    #edit-modal .cat-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 4px; }
+    #edit-modal .cat-btn { padding: 10px 4px; border: 1.5px solid #c9a87c; background: white; color: #2c1810; border-radius: 8px; font-size: 0.85rem; font-weight: bold; cursor: pointer; font-family: inherit; transition: all 0.15s; line-height: 1.2; text-align: center; }
+    #edit-modal .cat-btn:hover { background: #fdf6ec; }
+    #edit-modal .cat-btn.active { background: #2c1810; color: #fdf6ec; border-color: #2c1810; }
     .empty-state { text-align: center; padding: 80px 20px; color: #999; grid-column: 1 / -1; }
     .empty-state .icon { font-size: 4rem; margin-bottom: 16px; }
     .empty-state p { font-size: 1.1rem; }
@@ -120,6 +130,13 @@
 
 <div class="filters">
   <input type="text" id="search" placeholder="Buscar por titulo o autor..." oninput="onSearchChange()">
+</div>
+
+<div class="tabs" id="tabs">
+  <button class="tab active" data-cat="todos" onclick="setTab('todos')">Todos <span class="count" id="count-todos"></span></button>
+  <button class="tab" data-cat="hebreo" onclick="setTab('hebreo')">Hebreo <span class="count" id="count-hebreo"></span></button>
+  <button class="tab" data-cat="ingles_espanol" onclick="setTab('ingles_espanol')">Inglés/Español <span class="count" id="count-ingles_espanol"></span></button>
+  <button class="tab" data-cat="seculares" onclick="setTab('seculares')">Seculares <span class="count" id="count-seculares"></span></button>
 </div>
 
 <div class="grid" id="grid"></div>
@@ -165,6 +182,12 @@
       <span class="field-label">PRECIO ($)</span>
       <input id="edit-price" type="number" min="0" step="1" placeholder="0">
     </label>
+    <span class="field-label">CATEGORÍA</span>
+    <div class="cat-row" id="edit-cat-row">
+      <button type="button" class="cat-btn" data-cat="hebreo" onclick="setEditCategory('hebreo')">Hebreo</button>
+      <button type="button" class="cat-btn" data-cat="ingles_espanol" onclick="setEditCategory('ingles_espanol')">Inglés/<br>Español</button>
+      <button type="button" class="cat-btn" data-cat="seculares" onclick="setEditCategory('seculares')">Seculares</button>
+    </div>
     <div class="modal-actions">
       <button class="btn-save" onclick="saveEdit()">Guardar</button>
       <button class="btn-cancel" onclick="closeEdit()">Cancelar</button>
@@ -181,6 +204,19 @@
   // Paginacion
   const PAGE_SIZE = 20;
   let currentPage = 1;
+
+  // Categoria activa: 'todos' | 'hebreo' | 'ingles_espanol' | 'seculares'
+  let currentCategory = 'todos';
+
+  function setTab(cat) {
+    currentCategory = cat;
+    currentPage = 1;
+    document.querySelectorAll('#tabs .tab').forEach(t => {
+      t.classList.toggle('active', t.dataset.cat === cat);
+    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    renderBooks();
+  }
 
   function onSearchChange() {
     currentPage = 1;
@@ -216,9 +252,31 @@
     renderBooks();
   }
 
+  function bookCategory(b) {
+    const c = (b.category || '').toLowerCase();
+    return (c === 'hebreo' || c === 'ingles_espanol') ? c : 'seculares';
+  }
+
+  function updateTabCounts() {
+    const counts = { todos: 0, hebreo: 0, ingles_espanol: 0, seculares: 0 };
+    allBooks.forEach(b => {
+      if (b.sold) return;
+      counts.todos++;
+      counts[bookCategory(b)]++;
+    });
+    document.getElementById('count-todos').textContent          = counts.todos          ? `(${counts.todos})`          : '';
+    document.getElementById('count-hebreo').textContent         = counts.hebreo         ? `(${counts.hebreo})`         : '';
+    document.getElementById('count-ingles_espanol').textContent = counts.ingles_espanol ? `(${counts.ingles_espanol})` : '';
+    document.getElementById('count-seculares').textContent      = counts.seculares      ? `(${counts.seculares})`      : '';
+  }
+
   function renderBooks() {
+    updateTabCounts();
     const q = document.getElementById('search').value.toLowerCase().trim();
     let books = allBooks;
+    if (currentCategory !== 'todos') {
+      books = books.filter(b => bookCategory(b) === currentCategory);
+    }
     if (q) {
       books = books.filter(b =>
         b.title.toLowerCase().includes(q) ||
@@ -236,7 +294,7 @@
     const startIdx = (currentPage - 1) * PAGE_SIZE;
     const pageBooks = sorted.slice(startIdx, startIdx + PAGE_SIZE);
 
-    const count = allBooks.filter(b => !b.sold).length;
+    const count = available.length;
     document.getElementById('book-count').textContent =
       count === 0 ? 'Sin libros disponibles' :
       count === 1 ? '1 libro disponible' :
@@ -411,6 +469,14 @@
   }
 
   let editingId = null;
+  let editCategory = 'seculares';
+
+  function setEditCategory(cat) {
+    editCategory = cat;
+    document.querySelectorAll('#edit-cat-row .cat-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.cat === cat);
+    });
+  }
 
   document.getElementById('edit-modal').addEventListener('click', function(e) {
     if (e.target === this) closeEdit();
@@ -424,6 +490,7 @@
     document.getElementById('edit-author').value = book.author || '';
     document.getElementById('edit-detail').value = book.detail || '';
     document.getElementById('edit-price').value = book.price != null ? book.price : '';
+    setEditCategory(bookCategory(book));
     document.getElementById('edit-modal').style.display = 'flex';
     document.getElementById('edit-title').focus();
   }
@@ -444,7 +511,7 @@
     const res = await fetch(`/api/books/${editingId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json', 'X-Admin-Password': adminPassword },
-      body: JSON.stringify({ title, author, detail, price })
+      body: JSON.stringify({ title, author, detail, price, category: editCategory })
     });
     if (res.status === 403) { alert('Contraseña incorrecta'); return; }
     closeEdit();
