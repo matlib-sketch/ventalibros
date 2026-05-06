@@ -87,6 +87,11 @@
     .empty-state p { font-size: 1.1rem; }
     .admin-bar { background: #fff3cd; border: 1px solid #ffc107; padding: 10px 20px; text-align: center; font-size: 0.85rem; color: #856404; }
     .admin-bar button { margin-left: 10px; padding: 4px 12px; border: 1px solid #856404; background: transparent; border-radius: 4px; cursor: pointer; color: #856404; font-weight: bold; }
+    #pagination { display: none; justify-content: center; align-items: center; gap: 14px; padding: 12px 20px 28px; flex-wrap: wrap; }
+    #pagination button { padding: 8px 18px; border: 1.5px solid #c9a87c; background: white; color: #2c1810; border-radius: 8px; cursor: pointer; font-weight: bold; font-family: inherit; font-size: 0.9rem; transition: all 0.15s; }
+    #pagination button:hover:not(:disabled) { background: #2c1810; color: #fdf6ec; }
+    #pagination button:disabled { opacity: 0.35; cursor: not-allowed; }
+    #pagination span { color: #555; font-size: 0.9rem; font-weight: bold; }
     @media (max-width: 480px) {
       header h1 { font-size: 1.5rem; }
       .grid { grid-template-columns: repeat(2, 1fr); gap: 12px; padding: 16px 10px; }
@@ -114,10 +119,11 @@
 </div>
 
 <div class="filters">
-  <input type="text" id="search" placeholder="Buscar por titulo o autor..." oninput="renderBooks()">
+  <input type="text" id="search" placeholder="Buscar por titulo o autor..." oninput="onSearchChange()">
 </div>
 
 <div class="grid" id="grid"></div>
+<div id="pagination"></div>
 
 <button id="cart-float" onclick="openCart()">
   🛒 Ver selección
@@ -172,6 +178,21 @@
   let adminPassword = '';
   let cart = [];
 
+  // Paginacion
+  const PAGE_SIZE = 20;
+  let currentPage = 1;
+
+  function onSearchChange() {
+    currentPage = 1;
+    renderBooks();
+  }
+
+  function goToPage(p) {
+    currentPage = p;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    renderBooks();
+  }
+
   document.querySelector('header h1').addEventListener('dblclick', () => {
     if (!adminMode) {
       const pw = prompt('Contrasena de administrador:');
@@ -207,20 +228,34 @@
     const available = books.filter(b => !b.sold);
     const sold = books.filter(b => b.sold);
     const sorted = [...available, ...sold];
+
+    const total = sorted.length;
+    const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+    if (currentPage > totalPages) currentPage = totalPages;
+    if (currentPage < 1) currentPage = 1;
+    const startIdx = (currentPage - 1) * PAGE_SIZE;
+    const pageBooks = sorted.slice(startIdx, startIdx + PAGE_SIZE);
+
     const count = allBooks.filter(b => !b.sold).length;
     document.getElementById('book-count').textContent =
       count === 0 ? 'Sin libros disponibles' :
       count === 1 ? '1 libro disponible' :
       `${count} libros disponibles`;
+
     const grid = document.getElementById('grid');
+    const pag = document.getElementById('pagination');
+
     if (sorted.length === 0) {
       grid.innerHTML = `<div class="empty-state"><div class="icon">📖</div><p>${q ? 'No se encontraron libros con esa busqueda' : 'Todavia no hay libros cargados'}</p></div>`;
+      pag.style.display = 'none';
+      pag.innerHTML = '';
       return;
     }
-    grid.innerHTML = sorted.map(book => `
+
+    grid.innerHTML = pageBooks.map(book => `
       <div class="book-card ${book.sold ? 'sold' : ''}">
-        ${book.photo
-          ? `<img class="book-img" src="${book.photo}" alt="${escHtml(book.title)}" loading="lazy">`
+        ${book.hasPhoto
+          ? `<img class="book-img" src="/api/books/${book.id}/photo?v=${book.photoVersion}" alt="${escHtml(book.title)}" loading="lazy">`
           : `<div class="book-img-placeholder">📚</div>`}
         <div class="book-info">
           <div class="book-title">${escHtml(book.title)}</div>
@@ -245,6 +280,18 @@
         </div>
       </div>
     `).join('');
+
+    if (totalPages > 1) {
+      pag.style.display = 'flex';
+      pag.innerHTML = `
+        <button onclick="goToPage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>← Anterior</button>
+        <span>Pagina ${currentPage} de ${totalPages}</span>
+        <button onclick="goToPage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>Siguiente →</button>
+      `;
+    } else {
+      pag.style.display = 'none';
+      pag.innerHTML = '';
+    }
   }
 
   function toggleCart(id) {
@@ -415,8 +462,35 @@
 
   loadBooks();
 
+  // Service Worker con auto-update: si hay una version nueva, la activa y recarga.
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/sw.js').catch(() => {});
+    const wasControlled = !!navigator.serviceWorker.controller;
+
+    navigator.serviceWorker.register('/sw.js').then(reg => {
+      // Fuerza chequeo de update en cada carga
+      reg.update().catch(() => {});
+
+      // Si justo ya hay una version esperando, dile que tome el control
+      if (reg.waiting) reg.waiting.postMessage('SKIP_WAITING');
+
+      reg.addEventListener('updatefound', () => {
+        const newSW = reg.installing;
+        if (!newSW) return;
+        newSW.addEventListener('statechange', () => {
+          if (newSW.state === 'installed' && navigator.serviceWorker.controller) {
+            newSW.postMessage('SKIP_WAITING');
+          }
+        });
+      });
+    }).catch(() => {});
+
+    // Cuando una SW nueva toma el control, recargamos (excepto en la primera instalacion)
+    let refreshing = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (refreshing || !wasControlled) return;
+      refreshing = true;
+      location.reload();
+    });
   }
 </script>
 </body>

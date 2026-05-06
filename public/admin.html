@@ -608,8 +608,32 @@
     if (title && !searchInput.value) searchInput.value = title;
   });
 
+  // Service Worker con auto-update: si hay una version nueva, la activa y recarga.
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/sw.js').catch(() => {});
+    const wasControlled = !!navigator.serviceWorker.controller;
+
+    navigator.serviceWorker.register('/sw.js').then(reg => {
+      reg.update().catch(() => {});
+
+      if (reg.waiting) reg.waiting.postMessage('SKIP_WAITING');
+
+      reg.addEventListener('updatefound', () => {
+        const newSW = reg.installing;
+        if (!newSW) return;
+        newSW.addEventListener('statechange', () => {
+          if (newSW.state === 'installed' && navigator.serviceWorker.controller) {
+            newSW.postMessage('SKIP_WAITING');
+          }
+        });
+      });
+    }).catch(() => {});
+
+    let refreshing = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (refreshing || !wasControlled) return;
+      refreshing = true;
+      location.reload();
+    });
   }
 </script>
 </body>
