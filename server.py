@@ -45,7 +45,17 @@ def init_db():
             """)
             cur.execute("ALTER TABLE books ADD COLUMN IF NOT EXISTS detail TEXT DEFAULT ''")
             cur.execute("ALTER TABLE books ALTER COLUMN price DROP NOT NULL")
+            cur.execute("ALTER TABLE books ADD COLUMN IF NOT EXISTS category TEXT DEFAULT 'seculares'")
         conn.commit()
+
+# Categorias permitidas. Cualquier otra cosa se guarda como 'seculares'.
+VALID_CATEGORIES = {'hebreo', 'ingles_espanol', 'seculares'}
+
+def _clean_category(cat):
+    if not cat:
+        return 'seculares'
+    cat = str(cat).strip().lower()
+    return cat if cat in VALID_CATEGORIES else 'seculares'
 
 def read_books():
     if DATABASE_URL:
@@ -64,6 +74,7 @@ def read_books():
             'photo':         r['photo'],
             'sold':          r['sold'],
             'createdAt':     r['created_at'],
+            'category':      _clean_category(r.get('category')),
         } for r in rows]
     else:
         data_file = BASE_DIR / 'data' / 'books.json'
@@ -71,7 +82,10 @@ def read_books():
         if not data_file.exists():
             return []
         try:
-            return json.loads(data_file.read_text(encoding='utf-8'))
+            books = json.loads(data_file.read_text(encoding='utf-8'))
+            for b in books:
+                b['category'] = _clean_category(b.get('category'))
+            return books
         except Exception:
             return []
 
@@ -79,11 +93,12 @@ def save_book_db(book):
     with get_conn() as conn:
         with conn.cursor() as cur:
             cur.execute("""
-                INSERT INTO books (id, title, author, detail, original_price, price, photo, sold, created_at)
-                VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                INSERT INTO books (id, title, author, detail, original_price, price, photo, sold, created_at, category)
+                VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
             """, (book['id'], book['title'], book['author'], book.get('detail', ''),
                   book['originalPrice'], book['price'],
-                  book['photo'], book['sold'], book['createdAt']))
+                  book['photo'], book['sold'], book['createdAt'],
+                  _clean_category(book.get('category'))))
         conn.commit()
 
 def delete_book_db(book_id):
@@ -92,7 +107,7 @@ def delete_book_db(book_id):
             cur.execute("DELETE FROM books WHERE id=%s", (book_id,))
         conn.commit()
 
-def patch_book_db(book_id, sold=None, price=None, photo=None, title=None, author=None, detail=None):
+def patch_book_db(book_id, sold=None, price=None, photo=None, title=None, author=None, detail=None, category=None):
     with get_conn() as conn:
         with conn.cursor() as cur:
             if sold is not None:
@@ -107,6 +122,8 @@ def patch_book_db(book_id, sold=None, price=None, photo=None, title=None, author
                 cur.execute("UPDATE books SET author=%s WHERE id=%s", (author, book_id))
             if detail is not None:
                 cur.execute("UPDATE books SET detail=%s WHERE id=%s", (detail, book_id))
+            if category is not None:
+                cur.execute("UPDATE books SET category=%s WHERE id=%s", (_clean_category(category), book_id))
         conn.commit()
 
 def save_books_json(books):
@@ -283,6 +300,7 @@ def add_book():
         'photo':         data.get('photo') or None,
         'sold':          False,
         'createdAt':     datetime.datetime.utcnow().isoformat(),
+        'category':      _clean_category(data.get('category')),
     }
 
     if DATABASE_URL:
@@ -322,6 +340,7 @@ def patch_book(book_id):
             title=data.get('title'),
             author=data.get('author'),
             detail=data.get('detail'),
+            category=data.get('category'),
         )
     else:
         books = read_books()
@@ -340,6 +359,8 @@ def patch_book(book_id):
             book['author'] = data['author']
         if 'detail' in data:
             book['detail'] = data['detail']
+        if 'category' in data:
+            book['category'] = _clean_category(data['category'])
         save_books_json(books)
 
     return jsonify({'success': True})
