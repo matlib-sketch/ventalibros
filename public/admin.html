@@ -258,7 +258,7 @@
     /* --- Selector de categoria --- */
     .cat-row {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: repeat(2, 1fr);
       gap: 8px;
     }
 
@@ -414,8 +414,9 @@
   <div class="section-title">Categoría</div>
   <div class="cat-row" id="cat-row">
     <button type="button" class="cat-btn" data-cat="hebreo" onclick="setCategory('hebreo')">Hebreo</button>
-    <button type="button" class="cat-btn" data-cat="ingles_espanol" onclick="setCategory('ingles_espanol')">Inglés/<br>Español</button>
-    <button type="button" class="cat-btn active" data-cat="seculares" onclick="setCategory('seculares')">Seculares</button>
+    <button type="button" class="cat-btn" data-cat="ingles_espanol" onclick="setCategory('ingles_espanol')">Torá Ing/Esp</button>
+    <button type="button" class="cat-btn active" data-cat="novelas_judias" onclick="setCategory('novelas_judias')">Novelas Judías</button>
+    <button type="button" class="cat-btn" data-cat="seculares" onclick="setCategory('seculares')">Seculares</button>
   </div>
 
   <div class="divider"></div>
@@ -478,7 +479,7 @@
   });
 
   let photoBase64 = null; // data URI comprimida
-  let selectedCategory = 'seculares';
+  let selectedCategory = 'novelas_judias';
 
   function setCategory(cat) {
     selectedCategory = cat;
@@ -593,7 +594,7 @@
     `;
     area.onclick = () => document.getElementById('photo-input').click();
     photoBase64 = null;
-    setCategory('seculares');
+    setCategory('novelas_judias');
   }
 
   async function saveBook() {
