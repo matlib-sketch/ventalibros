@@ -45,17 +45,38 @@ def init_db():
             """)
             cur.execute("ALTER TABLE books ADD COLUMN IF NOT EXISTS detail TEXT DEFAULT ''")
             cur.execute("ALTER TABLE books ALTER COLUMN price DROP NOT NULL")
-            cur.execute("ALTER TABLE books ADD COLUMN IF NOT EXISTS category TEXT DEFAULT 'seculares'")
+            cur.execute("ALTER TABLE books ADD COLUMN IF NOT EXISTS category TEXT DEFAULT 'novelas_judias'")
+
+            # Registro de migraciones aplicadas (para no repetirlas en cada arranque).
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS schema_migrations (
+                    version INT PRIMARY KEY,
+                    applied_at TEXT
+                )
+            """)
+
+            # Migracion 1: renombramos la vieja categoria 'seculares' (que era el
+            # default historico y agarraba todo lo que no estaba clasificado) a
+            # 'novelas_judias'. Asi 'seculares' queda libre como categoria nueva
+            # vacia para libros que realmente sean seculares.
+            cur.execute("SELECT 1 FROM schema_migrations WHERE version = 1")
+            if not cur.fetchone():
+                import datetime
+                cur.execute("UPDATE books SET category = 'novelas_judias' WHERE category = 'seculares'")
+                cur.execute(
+                    "INSERT INTO schema_migrations (version, applied_at) VALUES (1, %s)",
+                    (datetime.datetime.utcnow().isoformat(),)
+                )
         conn.commit()
 
-# Categorias permitidas. Cualquier otra cosa se guarda como 'seculares'.
-VALID_CATEGORIES = {'hebreo', 'ingles_espanol', 'seculares'}
+# Categorias permitidas. Cualquier otra cosa se guarda como 'novelas_judias'.
+VALID_CATEGORIES = {'hebreo', 'ingles_espanol', 'novelas_judias', 'seculares'}
 
 def _clean_category(cat):
     if not cat:
-        return 'seculares'
+        return 'novelas_judias'
     cat = str(cat).strip().lower()
-    return cat if cat in VALID_CATEGORIES else 'seculares'
+    return cat if cat in VALID_CATEGORIES else 'novelas_judias'
 
 def read_books():
     if DATABASE_URL:
