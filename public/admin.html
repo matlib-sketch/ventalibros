@@ -429,7 +429,7 @@
              oninput="calcDiscount()" step="0.01">
     </div>
     <div class="field">
-      <label>Tu precio (-10%)</label>
+      <label>Tu precio (-40%)</label>
       <input type="number" id="sale-price" placeholder="0"
              class="price-highlight" step="0.01">
     </div>
@@ -549,7 +549,7 @@
 
       if (data.found && data.price) {
         const originalPrice = data.price;
-        const salePrice = originalPrice * 0.90;
+        const salePrice = originalPrice * 0.60;
         document.getElementById('original-price').value = originalPrice.toFixed(2);
         document.getElementById('sale-price').value = salePrice.toFixed(2);
         resultEl.className = 'success';
@@ -573,7 +573,7 @@
   function calcDiscount() {
     const orig = parseFloat(document.getElementById('original-price').value);
     if (!isNaN(orig) && orig > 0) {
-      document.getElementById('sale-price').value = (orig * 0.90).toFixed(2);
+      document.getElementById('sale-price').value = (orig * 0.60).toFixed(2);
     }
   }
 

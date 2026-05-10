@@ -294,6 +294,14 @@
     }
     const available = books.filter(b => !b.sold);
     const sold = books.filter(b => b.sold);
+    // Ordenar de mas caro a mas barato. Libros sin precio van al final.
+    const byPriceDesc = (a, b) => {
+      const pa = a.price != null ? a.price : -Infinity;
+      const pb = b.price != null ? b.price : -Infinity;
+      return pb - pa;
+    };
+    available.sort(byPriceDesc);
+    sold.sort(byPriceDesc);
     const sorted = [...available, ...sold];
 
     const total = sorted.length;
@@ -330,7 +338,7 @@
           ${book.detail ? `<div class="book-detail">${escHtml(book.detail)}</div>` : ''}
                     <div class="price-block">
             ${book.price != null
-              ? `<span class="price-sale">${formatPrice(book.price)}</span>${book.originalPrice ? `<span class="price-original">${formatPrice(book.originalPrice)}</span><span class="discount-badge">-10%</span>` : ''}`
+              ? `<span class="price-sale">${formatPrice(book.price)}</span>${book.originalPrice ? `<span class="price-original">${formatPrice(book.originalPrice)}</span><span class="discount-badge">-40%</span>` : ''}`
               : `<span style="color:#aaa;font-size:0.85rem;font-style:italic">Sin precio aún</span>`}
           </div>
           ${!book.sold && book.price != null ? `<button class="btn-cart ${cart.includes(book.id) ? 'in-cart' : ''}" onclick="toggleCart('${book.id}')">
