@@ -424,14 +424,14 @@
   <div class="section-title">Precio</div>
   <div class="price-row">
     <div class="field">
-      <label>Precio internet</label>
+      <label>Precio internet (CLP)</label>
       <input type="number" id="original-price" placeholder="0"
-             oninput="calcDiscount()" step="0.01">
+             oninput="calcDiscount()" step="1" min="0">
     </div>
     <div class="field">
-      <label>Tu precio (-40%)</label>
+      <label>Tu precio (-40%) (CLP)</label>
       <input type="number" id="sale-price" placeholder="0"
-             class="price-highlight" step="0.01">
+             class="price-highlight" step="1" min="0">
     </div>
   </div>
 </div>
@@ -548,12 +548,14 @@
       if (data.author) document.getElementById('author').value = data.author;
 
       if (data.found && data.price) {
-        const originalPrice = data.price;
-        const salePrice = originalPrice * 0.60;
-        document.getElementById('original-price').value = originalPrice.toFixed(2);
-        document.getElementById('sale-price').value = salePrice.toFixed(2);
+        // El lookup devuelve precios en USD (Amazon u otra fuente).
+        // Convertimos a pesos chilenos multiplicando por 900.
+        const originalPrice = Math.round(data.price * 900);
+        const salePrice = Math.round(originalPrice * 0.60);
+        document.getElementById('original-price').value = originalPrice;
+        document.getElementById('sale-price').value = salePrice;
         resultEl.className = 'success';
-        resultEl.innerHTML = `Precio encontrado: <strong>${data.currency || '$'}${originalPrice.toFixed(2)}</strong> &rarr; Tu precio: <strong>$${salePrice.toFixed(2)}</strong>`;
+        resultEl.innerHTML = `Precio encontrado: <strong>${data.currency || '$'}${data.price.toFixed(2)} USD</strong> &rarr; <strong>$${originalPrice.toLocaleString('es-CL')} CLP</strong> &rarr; Tu precio: <strong>$${salePrice.toLocaleString('es-CL')}</strong>`;
         resultEl.style.display = 'block';
       } else {
         resultEl.className = 'warning';
@@ -573,7 +575,7 @@
   function calcDiscount() {
     const orig = parseFloat(document.getElementById('original-price').value);
     if (!isNaN(orig) && orig > 0) {
-      document.getElementById('sale-price').value = (orig * 0.60).toFixed(2);
+      document.getElementById('sale-price').value = Math.round(orig * 0.60);
     }
   }
 
