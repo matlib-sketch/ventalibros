@@ -82,6 +82,24 @@ def init_db():
                     "INSERT INTO schema_migrations (version, applied_at) VALUES (2, %s)",
                     (datetime.datetime.utcnow().isoformat(),)
                 )
+
+            # Migracion 3: traspasamos todos los precios de USD a pesos chilenos
+            # (CLP) multiplicando por 900. Aplica tanto al precio de venta como
+            # al precio internet de referencia. Solo corre una vez.
+            cur.execute("SELECT 1 FROM schema_migrations WHERE version = 3")
+            if not cur.fetchone():
+                import datetime
+                cur.execute(
+                    "UPDATE books SET "
+                    "price = ROUND((price * 900)::numeric, 0), "
+                    "original_price = CASE WHEN original_price IS NOT NULL "
+                    "THEN ROUND((original_price * 900)::numeric, 0) ELSE NULL END "
+                    "WHERE price IS NOT NULL"
+                )
+                cur.execute(
+                    "INSERT INTO schema_migrations (version, applied_at) VALUES (3, %s)",
+                    (datetime.datetime.utcnow().isoformat(),)
+                )
         conn.commit()
 
 # Categorias permitidas. Cualquier otra cosa se guarda como 'novelas_judias'.
