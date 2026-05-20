@@ -22,12 +22,16 @@
     .filters { padding: 16px 20px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; background: #f5ead8; border-bottom: 1px solid #ddd; }
     .filters input { flex: 1; min-width: 160px; padding: 8px 14px; border: 1px solid #c9a87c; border-radius: 20px; font-size: 0.95rem; background: white; outline: none; }
     .filters input:focus { border-color: #8b4513; }
-    .tabs { display: flex; gap: 0; padding: 0 12px; background: #f5ead8; border-bottom: 1px solid #ddd; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: thin; }
-    .tab { flex: 0 0 auto; padding: 13px 12px; border: none; background: transparent; color: #6b4a2b; font-size: 0.85rem; font-weight: bold; cursor: pointer; font-family: inherit; border-bottom: 3px solid transparent; transition: all 0.15s; white-space: nowrap; letter-spacing: 0.3px; }
+    .tabs { display: flex; gap: 0; padding: 0; background: #f5ead8; border-bottom: 1px solid #ddd; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+    .tabs::-webkit-scrollbar { display: none; }
+    .tab { flex: 0 0 auto; padding: 11px 9px; border: none; background: transparent; color: #6b4a2b; font-size: 0.75rem; font-weight: bold; cursor: pointer; font-family: inherit; border-bottom: 3px solid transparent; transition: all 0.15s; white-space: nowrap; letter-spacing: 0; }
     .tab:hover { color: #2c1810; background: rgba(255,255,255,0.4); }
     .tab.active { color: #2c1810; border-bottom-color: #2c1810; background: white; }
-    .tab .count { display: inline-block; margin-left: 4px; font-size: 0.72rem; color: #999; font-weight: normal; }
+    .tab .count { display: inline-block; margin-left: 3px; font-size: 0.68rem; color: #999; font-weight: normal; }
     .tab.active .count { color: #2c7a3c; }
+    @media (min-width: 480px) {
+      .tab { padding: 12px 11px; font-size: 0.82rem; }
+    }
     @media (min-width: 720px) {
       .tabs { padding: 0 20px; }
       .tab { flex: 1; padding: 14px 14px; font-size: 0.95rem; letter-spacing: 0.5px; }
