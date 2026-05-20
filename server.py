@@ -46,6 +46,7 @@ def init_db():
             cur.execute("ALTER TABLE books ADD COLUMN IF NOT EXISTS detail TEXT DEFAULT ''")
             cur.execute("ALTER TABLE books ALTER COLUMN price DROP NOT NULL")
             cur.execute("ALTER TABLE books ADD COLUMN IF NOT EXISTS category TEXT DEFAULT 'novelas_judias'")
+            cur.execute("ALTER TABLE books ADD COLUMN IF NOT EXISTS categories TEXT[] DEFAULT '{}'")
 
             # Registro de migraciones aplicadas (para no repetirlas en cada arranque).
             cur.execute("""
@@ -100,16 +101,43 @@ def init_db():
                     "INSERT INTO schema_migrations (version, applied_at) VALUES (3, %s)",
                     (datetime.datetime.utcnow().isoformat(),)
                 )
+
+            # Migracion 4: pasamos a multi-categoria. La columna 'categories' (TEXT[])
+            # es la fuente de verdad. Copiamos el 'category' actual al array.
+            cur.execute("SELECT 1 FROM schema_migrations WHERE version = 4")
+            if not cur.fetchone():
+                import datetime
+                cur.execute(
+                    "UPDATE books SET categories = ARRAY[category] "
+                    "WHERE category IS NOT NULL AND (categories IS NULL OR array_length(categories,1) IS NULL)"
+                )
+                cur.execute(
+                    "UPDATE books SET categories = ARRAY['novelas_judias'] "
+                    "WHERE categories IS NULL OR array_length(categories,1) IS NULL"
+                )
+                cur.execute(
+                    "INSERT INTO schema_migrations (version, applied_at) VALUES (4, %s)",
+                    (datetime.datetime.utcnow().isoformat(),)
+                )
         conn.commit()
 
 # Categorias permitidas. Cualquier otra cosa se guarda como 'novelas_judias'.
-VALID_CATEGORIES = {'hebreo', 'ingles_espanol', 'novelas_judias', 'seculares'}
+VALID_CATEGORIES = {'hebreo', 'ingles_espanol', 'novelas_judias', 'seculares', 'ninos', 'mujeres'}
 
 def _clean_category(cat):
     if not cat:
         return 'novelas_judias'
     cat = str(cat).strip().lower()
     return cat if cat in VALID_CATEGORIES else 'novelas_judias'
+
+def _clean_categories(cats):
+    if not cats:
+        return ['novelas_judias']
+    if isinstance(cats, str):
+        cats = [cats]
+    result = [str(c).strip().lower() for c in cats if c]
+    result = [c for c in result if c in VALID_CATEGORIES]
+    return result if result else ['novelas_judias']
 
 def read_books():
     if DATABASE_URL:
@@ -118,6 +146,12 @@ def read_books():
             with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
                 cur.execute("SELECT * FROM books ORDER BY created_at DESC")
                 rows = cur.fetchall()
+        def _row_cats(r):
+            raw = list(r.get('categories') or [])
+            if not raw and r.get('category'):
+                raw = [r['category']]
+            return _clean_categories(raw)
+
         return [{
             'id':            r['id'],
             'title':         r['title'],
@@ -128,7 +162,8 @@ def read_books():
             'photo':         r['photo'],
             'sold':          r['sold'],
             'createdAt':     r['created_at'],
-            'category':      _clean_category(r.get('category')),
+            'category':      _row_cats(r)[0],
+            'categories':    _row_cats(r),
         } for r in rows]
     else:
         data_file = BASE_DIR / 'data' / 'books.json'
@@ -138,21 +173,24 @@ def read_books():
         try:
             books = json.loads(data_file.read_text(encoding='utf-8'))
             for b in books:
-                b['category'] = _clean_category(b.get('category'))
+                cats = _clean_categories(b.get('categories') or ([b.get('category')] if b.get('category') else []))
+                b['category'] = cats[0]
+                b['categories'] = cats
             return books
         except Exception:
             return []
 
 def save_book_db(book):
+    cats = _clean_categories(book.get('categories') or ([book.get('category')] if book.get('category') else []))
     with get_conn() as conn:
         with conn.cursor() as cur:
             cur.execute("""
-                INSERT INTO books (id, title, author, detail, original_price, price, photo, sold, created_at, category)
-                VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                INSERT INTO books (id, title, author, detail, original_price, price, photo, sold, created_at, category, categories)
+                VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
             """, (book['id'], book['title'], book['author'], book.get('detail', ''),
                   book['originalPrice'], book['price'],
                   book['photo'], book['sold'], book['createdAt'],
-                  _clean_category(book.get('category'))))
+                  cats[0], cats))
         conn.commit()
 
 def delete_book_db(book_id):
@@ -177,7 +215,8 @@ def patch_book_db(book_id, sold=None, price=None, photo=None, title=None, author
             if detail is not None:
                 cur.execute("UPDATE books SET detail=%s WHERE id=%s", (detail, book_id))
             if category is not None:
-                cur.execute("UPDATE books SET category=%s WHERE id=%s", (_clean_category(category), book_id))
+                cats = _clean_categories(category if isinstance(category, list) else [category])
+                cur.execute("UPDATE books SET category=%s, categories=%s WHERE id=%s", (cats[0], cats, book_id))
         conn.commit()
 
 def save_books_json(books):
@@ -344,6 +383,7 @@ def add_book():
         orig = 0.0
 
     import datetime
+    cats = _clean_categories(data.get('categories') or ([data.get('category')] if data.get('category') else []))
     book = {
         'id':            str(uuid.uuid4()),
         'title':         title,
@@ -354,7 +394,8 @@ def add_book():
         'photo':         data.get('photo') or None,
         'sold':          False,
         'createdAt':     datetime.datetime.utcnow().isoformat(),
-        'category':      _clean_category(data.get('category')),
+        'category':      cats[0],
+        'categories':    cats,
     }
 
     if DATABASE_URL:
@@ -394,7 +435,7 @@ def patch_book(book_id):
             title=data.get('title'),
             author=data.get('author'),
             detail=data.get('detail'),
-            category=data.get('category'),
+            category=data.get('categories') or data.get('category'),
         )
     else:
         books = read_books()

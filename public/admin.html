@@ -411,12 +411,14 @@
 
   <div class="divider"></div>
 
-  <div class="section-title">Categoría</div>
+  <div class="section-title">Categoría (puede elegir varias)</div>
   <div class="cat-row" id="cat-row">
-    <button type="button" class="cat-btn" data-cat="hebreo" onclick="setCategory('hebreo')">Hebreo</button>
-    <button type="button" class="cat-btn" data-cat="ingles_espanol" onclick="setCategory('ingles_espanol')">Torá Ing/Esp</button>
-    <button type="button" class="cat-btn active" data-cat="novelas_judias" onclick="setCategory('novelas_judias')">Novelas Judías</button>
-    <button type="button" class="cat-btn" data-cat="seculares" onclick="setCategory('seculares')">Seculares</button>
+    <button type="button" class="cat-btn" data-cat="hebreo" onclick="toggleCategory('hebreo')">Hebreo</button>
+    <button type="button" class="cat-btn" data-cat="ingles_espanol" onclick="toggleCategory('ingles_espanol')">Torá Ing/Esp</button>
+    <button type="button" class="cat-btn active" data-cat="novelas_judias" onclick="toggleCategory('novelas_judias')">Novelas Judías</button>
+    <button type="button" class="cat-btn" data-cat="seculares" onclick="toggleCategory('seculares')">Seculares</button>
+    <button type="button" class="cat-btn" data-cat="ninos" onclick="toggleCategory('ninos')">Niños</button>
+    <button type="button" class="cat-btn" data-cat="mujeres" onclick="toggleCategory('mujeres')">Mujeres</button>
   </div>
 
   <div class="divider"></div>
@@ -479,12 +481,17 @@
   });
 
   let photoBase64 = null; // data URI comprimida
-  let selectedCategory = 'novelas_judias';
+  let selectedCategories = ['novelas_judias'];
 
-  function setCategory(cat) {
-    selectedCategory = cat;
+  function toggleCategory(cat) {
+    const idx = selectedCategories.indexOf(cat);
+    if (idx === -1) {
+      selectedCategories.push(cat);
+    } else if (selectedCategories.length > 1) {
+      selectedCategories.splice(idx, 1);
+    }
     document.querySelectorAll('#cat-row .cat-btn').forEach(b => {
-      b.classList.toggle('active', b.dataset.cat === cat);
+      b.classList.toggle('active', selectedCategories.includes(b.dataset.cat));
     });
   }
 
@@ -596,7 +603,10 @@
     `;
     area.onclick = () => document.getElementById('photo-input').click();
     photoBase64 = null;
-    setCategory('novelas_judias');
+    selectedCategories = ['novelas_judias'];
+    document.querySelectorAll('#cat-row .cat-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.cat === 'novelas_judias');
+    });
   }
 
   async function saveBook() {
@@ -622,7 +632,7 @@
           originalPrice: originalPrice || null,
           price,
           photo: photoBase64 || null,
-          category: selectedCategory
+          categories: selectedCategories
         })
       });
       const data = await res.json();

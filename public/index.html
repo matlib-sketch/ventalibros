@@ -72,7 +72,7 @@
     #cart-badge { background: #e74c3c; color: white; border-radius: 50%; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; }
     #cart-modal, #edit-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 999; align-items: center; justify-content: center; padding: 20px; }
     #cart-modal .modal-box { background: white; border-radius: 12px; padding: 24px; width: 100%; max-width: 460px; box-shadow: 0 8px 32px rgba(0,0,0,0.3); max-height: 90vh; overflow-y: auto; }
-    #edit-modal .modal-box { background: white; border-radius: 12px; padding: 24px; width: 100%; max-width: 420px; box-shadow: 0 8px 32px rgba(0,0,0,0.3); }
+    #edit-modal .modal-box { background: white; border-radius: 12px; padding: 24px; width: 100%; max-width: 420px; box-shadow: 0 8px 32px rgba(0,0,0,0.3); max-height: 90vh; overflow-y: auto; }
     #cart-modal h3, #edit-modal h3 { margin-bottom: 16px; color: #2c1810; font-size: 1.1rem; }
     .cart-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #eee; gap: 10px; }
     .cart-item-title { font-size: 0.9rem; font-weight: bold; color: #2c1810; flex: 1; }
@@ -97,7 +97,7 @@
     #edit-modal .btn-save:hover { opacity: 0.85; }
     #edit-modal .btn-cancel { flex: 1; padding: 10px; background: #eee; color: #555; border: none; border-radius: 6px; font-size: 0.95rem; font-weight: bold; cursor: pointer; }
     #edit-modal .btn-cancel:hover { background: #ddd; }
-    #edit-modal .cat-row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; margin-top: 4px; }
+    #edit-modal .cat-row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; margin-top: 4px; margin-bottom: 16px; }
     #edit-modal .cat-btn { padding: 10px 4px; border: 1.5px solid #c9a87c; background: white; color: #2c1810; border-radius: 8px; font-size: 0.85rem; font-weight: bold; cursor: pointer; font-family: inherit; transition: all 0.15s; line-height: 1.2; text-align: center; }
     #edit-modal .cat-btn:hover { background: #fdf6ec; }
     #edit-modal .cat-btn.active { background: #2c1810; color: #fdf6ec; border-color: #2c1810; }
@@ -147,6 +147,8 @@
   <button class="tab" data-cat="ingles_espanol" onclick="setTab('ingles_espanol')">Torá Ing/Esp <span class="count" id="count-ingles_espanol"></span></button>
   <button class="tab" data-cat="novelas_judias" onclick="setTab('novelas_judias')">Novelas Judías <span class="count" id="count-novelas_judias"></span></button>
   <button class="tab" data-cat="seculares" onclick="setTab('seculares')">Seculares <span class="count" id="count-seculares"></span></button>
+  <button class="tab" data-cat="ninos" onclick="setTab('ninos')">Niños <span class="count" id="count-ninos"></span></button>
+  <button class="tab" data-cat="mujeres" onclick="setTab('mujeres')">Mujeres <span class="count" id="count-mujeres"></span></button>
 </div>
 
 <div class="grid" id="grid"></div>
@@ -192,12 +194,14 @@
       <span class="field-label">PRECIO ($)</span>
       <input id="edit-price" type="number" min="0" step="1" placeholder="0">
     </label>
-    <span class="field-label">CATEGORÍA</span>
+    <span class="field-label">CATEGORÍAS (puede elegir varias)</span>
     <div class="cat-row" id="edit-cat-row">
-      <button type="button" class="cat-btn" data-cat="hebreo" onclick="setEditCategory('hebreo')">Hebreo</button>
-      <button type="button" class="cat-btn" data-cat="ingles_espanol" onclick="setEditCategory('ingles_espanol')">Torá Ing/Esp</button>
-      <button type="button" class="cat-btn" data-cat="novelas_judias" onclick="setEditCategory('novelas_judias')">Novelas Judías</button>
-      <button type="button" class="cat-btn" data-cat="seculares" onclick="setEditCategory('seculares')">Seculares</button>
+      <button type="button" class="cat-btn" data-cat="hebreo" onclick="toggleEditCategory('hebreo')">Hebreo</button>
+      <button type="button" class="cat-btn" data-cat="ingles_espanol" onclick="toggleEditCategory('ingles_espanol')">Torá Ing/Esp</button>
+      <button type="button" class="cat-btn" data-cat="novelas_judias" onclick="toggleEditCategory('novelas_judias')">Novelas Judías</button>
+      <button type="button" class="cat-btn" data-cat="seculares" onclick="toggleEditCategory('seculares')">Seculares</button>
+      <button type="button" class="cat-btn" data-cat="ninos" onclick="toggleEditCategory('ninos')">Niños</button>
+      <button type="button" class="cat-btn" data-cat="mujeres" onclick="toggleEditCategory('mujeres')">Mujeres</button>
     </div>
     <div class="modal-actions">
       <button class="btn-save" onclick="saveEdit()">Guardar</button>
@@ -216,7 +220,6 @@
   const PAGE_SIZE = 20;
   let currentPage = 1;
 
-  // Categoria activa: 'todos' | 'hebreo' | 'ingles_espanol' | 'novelas_judias' | 'seculares'
   let currentCategory = 'todos';
 
   function setTab(cat) {
@@ -263,24 +266,26 @@
     renderBooks();
   }
 
-  function bookCategory(b) {
-    const c = (b.category || '').toLowerCase();
-    if (c === 'hebreo' || c === 'ingles_espanol' || c === 'novelas_judias' || c === 'seculares') return c;
-    return 'novelas_judias';
+  function bookCategories(b) {
+    if (Array.isArray(b.categories) && b.categories.length > 0) return b.categories;
+    const c = (b.category || 'novelas_judias').toLowerCase();
+    return [c];
   }
 
   function updateTabCounts() {
-    const counts = { todos: 0, hebreo: 0, ingles_espanol: 0, novelas_judias: 0, seculares: 0 };
+    const counts = { todos: 0, hebreo: 0, ingles_espanol: 0, novelas_judias: 0, seculares: 0, ninos: 0, mujeres: 0 };
     allBooks.forEach(b => {
       if (b.sold) return;
       counts.todos++;
-      counts[bookCategory(b)]++;
+      bookCategories(b).forEach(c => { if (c in counts) counts[c]++; });
     });
     document.getElementById('count-todos').textContent          = counts.todos          ? `(${counts.todos})`          : '';
     document.getElementById('count-hebreo').textContent         = counts.hebreo         ? `(${counts.hebreo})`         : '';
     document.getElementById('count-ingles_espanol').textContent = counts.ingles_espanol ? `(${counts.ingles_espanol})` : '';
     document.getElementById('count-novelas_judias').textContent = counts.novelas_judias ? `(${counts.novelas_judias})` : '';
     document.getElementById('count-seculares').textContent      = counts.seculares      ? `(${counts.seculares})`      : '';
+    document.getElementById('count-ninos').textContent          = counts.ninos          ? `(${counts.ninos})`          : '';
+    document.getElementById('count-mujeres').textContent        = counts.mujeres        ? `(${counts.mujeres})`        : '';
   }
 
   function renderBooks() {
@@ -288,7 +293,7 @@
     const q = document.getElementById('search').value.toLowerCase().trim();
     let books = allBooks;
     if (currentCategory !== 'todos') {
-      books = books.filter(b => bookCategory(b) === currentCategory);
+      books = books.filter(b => bookCategories(b).includes(currentCategory));
     }
     if (q) {
       books = books.filter(b =>
@@ -340,7 +345,7 @@
           <div class="book-title">${escHtml(book.title)}</div>
           ${book.author ? `<div class="book-author">${escHtml(book.author)}</div>` : ''}
           ${book.detail ? `<div class="book-detail">${escHtml(book.detail)}</div>` : ''}
-                    <div class="price-block">
+          <div class="price-block">
             ${book.price != null
               ? `<span class="price-sale">${formatPrice(book.price)}</span>${book.originalPrice ? `<span class="price-original">${formatPrice(book.originalPrice)}</span><span class="discount-badge">-40%</span>` : ''}`
               : `<span style="color:#aaa;font-size:0.85rem;font-style:italic">Sin precio aún</span>`}
@@ -490,12 +495,24 @@
   }
 
   let editingId = null;
-  let editCategory = 'novelas_judias';
+  let editCategories = ['novelas_judias'];
 
-  function setEditCategory(cat) {
-    editCategory = cat;
+  function toggleEditCategory(cat) {
+    const idx = editCategories.indexOf(cat);
+    if (idx === -1) {
+      editCategories.push(cat);
+    } else if (editCategories.length > 1) {
+      editCategories.splice(idx, 1);
+    }
     document.querySelectorAll('#edit-cat-row .cat-btn').forEach(b => {
-      b.classList.toggle('active', b.dataset.cat === cat);
+      b.classList.toggle('active', editCategories.includes(b.dataset.cat));
+    });
+  }
+
+  function setEditCategories(cats) {
+    editCategories = cats.length ? [...cats] : ['novelas_judias'];
+    document.querySelectorAll('#edit-cat-row .cat-btn').forEach(b => {
+      b.classList.toggle('active', editCategories.includes(b.dataset.cat));
     });
   }
 
@@ -511,7 +528,7 @@
     document.getElementById('edit-author').value = book.author || '';
     document.getElementById('edit-detail').value = book.detail || '';
     document.getElementById('edit-price').value = book.price != null ? book.price : '';
-    setEditCategory(bookCategory(book));
+    setEditCategories(bookCategories(book));
     document.getElementById('edit-modal').style.display = 'flex';
     document.getElementById('edit-title').focus();
   }
@@ -532,7 +549,7 @@
     const res = await fetch(`/api/books/${editingId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json', 'X-Admin-Password': adminPassword },
-      body: JSON.stringify({ title, author, detail, price, category: editCategory })
+      body: JSON.stringify({ title, author, detail, price, categories: editCategories })
     });
     if (res.status === 403) { alert('Contraseña incorrecta'); return; }
     closeEdit();
