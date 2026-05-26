@@ -13,52 +13,56 @@
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: 'Georgia', serif; background: #fdf6ec; color: #2c2c2c; min-height: 100vh; }
-    header { background: #2c1810; color: #fdf6ec; padding: 24px 20px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
-    header h1 { font-size: 2rem; letter-spacing: 2px; margin-bottom: 4px; }
-    header p { font-size: 0.9rem; color: #c9a87c; letter-spacing: 1px; }
-    .top-bar { display: flex; justify-content: space-between; align-items: center; padding: 12px 20px; background: #3d2314; color: #fdf6ec; font-size: 0.85rem; flex-wrap: wrap; gap: 8px; }
+    header { background: #2c1810; color: #fdf6ec; padding: 20px 20px 16px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
+    header h1 { font-size: 1.8rem; letter-spacing: 2px; margin-bottom: 4px; }
+    header p { font-size: 0.85rem; color: #c9a87c; letter-spacing: 1px; }
+    .top-bar { display: flex; justify-content: space-between; align-items: center; padding: 10px 16px; background: #3d2314; color: #fdf6ec; font-size: 0.85rem; flex-wrap: wrap; gap: 8px; }
     .top-bar a { color: #c9a87c; text-decoration: none; font-weight: bold; border: 1px solid #c9a87c; padding: 5px 12px; border-radius: 4px; transition: all 0.2s; }
     .top-bar a:hover { background: #c9a87c; color: #2c1810; }
-    .filters { padding: 16px 20px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; background: #f5ead8; border-bottom: 1px solid #ddd; }
-    .filters input { flex: 1; min-width: 160px; padding: 8px 14px; border: 1px solid #c9a87c; border-radius: 20px; font-size: 0.95rem; background: white; outline: none; }
+
+    /* ---- Selector de sección principal ---- */
+    .section-switcher { display: grid; grid-template-columns: 1fr 1fr; gap: 0; background: #2c1810; padding: 10px 12px 0; }
+    .section-btn { padding: 12px 8px 10px; border: none; background: #4a2818; color: #c9a87c; font-size: 0.95rem; font-weight: bold; cursor: pointer; font-family: inherit; border-radius: 10px 10px 0 0; transition: all 0.15s; letter-spacing: 0.3px; display: flex; align-items: center; justify-content: center; gap: 6px; }
+    .section-btn .sec-icon { font-size: 1.2rem; }
+    .section-btn.active { background: #fdf6ec; color: #2c1810; }
+    .section-btn:not(.active):hover { background: #5a3020; color: #fdf6ec; }
+
+    /* ---- Pestañas de categoría ---- */
+    .cat-tabs { background: #fdf6ec; border-bottom: 2px solid #d4c4a8; padding: 8px 12px 0; display: flex; flex-wrap: wrap; gap: 4px; }
+    .cat-tab { flex: 0 0 auto; padding: 8px 12px; border: none; background: transparent; color: #6b4a2b; font-size: 0.8rem; font-weight: bold; cursor: pointer; font-family: inherit; border-bottom: 3px solid transparent; transition: all 0.15s; white-space: nowrap; border-radius: 6px 6px 0 0; }
+    .cat-tab:hover { background: rgba(44,24,16,0.07); color: #2c1810; }
+    .cat-tab.active { color: #2c1810; border-bottom-color: #2c1810; background: white; }
+    .cat-tab .count { display: inline-block; margin-left: 3px; font-size: 0.68rem; color: #999; font-weight: normal; }
+    .cat-tab.active .count { color: #2c7a3c; }
+
+    .filters { padding: 12px 16px; display: flex; gap: 10px; align-items: center; background: #f5ead8; border-bottom: 1px solid #ddd; }
+    .filters input { flex: 1; padding: 8px 14px; border: 1px solid #c9a87c; border-radius: 20px; font-size: 0.95rem; background: white; outline: none; }
     .filters input:focus { border-color: #8b4513; }
-    .tabs { display: flex; gap: 0; padding: 0; background: #f5ead8; border-bottom: 1px solid #ddd; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
-    .tabs::-webkit-scrollbar { display: none; }
-    .tab { flex: 0 0 auto; padding: 11px 9px; border: none; background: transparent; color: #6b4a2b; font-size: 0.75rem; font-weight: bold; cursor: pointer; font-family: inherit; border-bottom: 3px solid transparent; transition: all 0.15s; white-space: nowrap; letter-spacing: 0; }
-    .tab:hover { color: #2c1810; background: rgba(255,255,255,0.4); }
-    .tab.active { color: #2c1810; border-bottom-color: #2c1810; background: white; }
-    .tab .count { display: inline-block; margin-left: 3px; font-size: 0.68rem; color: #999; font-weight: normal; }
-    .tab.active .count { color: #2c7a3c; }
-    @media (min-width: 480px) {
-      .tab { padding: 12px 11px; font-size: 0.82rem; }
-    }
-    @media (min-width: 720px) {
-      .tabs { padding: 0 20px; }
-      .tab { flex: 1; padding: 14px 14px; font-size: 0.95rem; letter-spacing: 0.5px; }
-      .tab .count { font-size: 0.75rem; margin-left: 6px; }
-    }
+
     #book-count { font-size: 0.85rem; color: #666; white-space: nowrap; }
-    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 24px; padding: 28px 20px; max-width: 1200px; margin: 0 auto; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px; padding: 24px 16px; max-width: 1200px; margin: 0 auto; }
     .book-card { background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 3px 12px rgba(0,0,0,0.1); transition: transform 0.2s, box-shadow 0.2s; position: relative; }
     .book-card:hover { transform: translateY(-4px); box-shadow: 0 8px 24px rgba(0,0,0,0.15); }
     .book-card.sold { opacity: 0.55; }
     .book-card.sold::after { content: "VENDIDO"; position: absolute; top: 12px; right: -28px; background: #c0392b; color: white; font-size: 0.7rem; font-weight: bold; padding: 4px 36px; transform: rotate(35deg); letter-spacing: 1px; }
     .book-img { width: 100%; aspect-ratio: 3/4; object-fit: cover; object-position: center top; background: #e8dcc8; display: block; }
     .book-img-placeholder { width: 100%; aspect-ratio: 3/4; background: linear-gradient(135deg, #e8dcc8, #d4c4a8); display: flex; align-items: center; justify-content: center; font-size: 4rem; color: #a08060; }
-    .book-info { padding: 14px; }
-    .book-title { font-size: 1rem; font-weight: bold; line-height: 1.3; margin-bottom: 4px; color: #2c1810; }
-    .book-author { font-size: 0.8rem; color: #888; margin-bottom: 12px; font-style: italic; }
-    .book-detail { font-size: 0.78rem; color: #777; margin-bottom: 10px; line-height: 1.4; }
-    .price-block { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
-    .price-sale { font-size: 1.4rem; font-weight: bold; color: #2c7a3c; }
-    .price-original { font-size: 0.8rem; color: #aaa; text-decoration: line-through; }
-    .discount-badge { background: #e74c3c; color: white; font-size: 0.65rem; font-weight: bold; padding: 2px 6px; border-radius: 10px; }
-    .btn-cart { display: block; width: 100%; margin-top: 10px; padding: 8px; border: 2px solid #2c7a3c; border-radius: 6px; background: white; color: #2c7a3c; font-size: 0.85rem; font-weight: bold; cursor: pointer; transition: all 0.2s; font-family: inherit; }
+    .item-img { width: 100%; aspect-ratio: 1/1; object-fit: cover; background: #e8dcc8; display: block; }
+    .item-img-placeholder { width: 100%; aspect-ratio: 1/1; background: linear-gradient(135deg, #e0eedc, #c4d4c8); display: flex; align-items: center; justify-content: center; font-size: 4rem; color: #60a080; }
+    .book-info { padding: 12px; }
+    .book-title { font-size: 0.95rem; font-weight: bold; line-height: 1.3; margin-bottom: 4px; color: #2c1810; }
+    .book-author { font-size: 0.78rem; color: #888; margin-bottom: 8px; font-style: italic; }
+    .book-detail { font-size: 0.75rem; color: #777; margin-bottom: 8px; line-height: 1.4; }
+    .price-block { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; }
+    .price-sale { font-size: 1.3rem; font-weight: bold; color: #2c7a3c; }
+    .price-original { font-size: 0.78rem; color: #aaa; text-decoration: line-through; }
+    .discount-badge { background: #e74c3c; color: white; font-size: 0.62rem; font-weight: bold; padding: 2px 5px; border-radius: 10px; }
+    .btn-cart { display: block; width: 100%; margin-top: 8px; padding: 7px; border: 2px solid #2c7a3c; border-radius: 6px; background: white; color: #2c7a3c; font-size: 0.82rem; font-weight: bold; cursor: pointer; transition: all 0.2s; font-family: inherit; }
     .btn-cart:hover { background: #2c7a3c; color: white; }
     .btn-cart.in-cart { background: #2c7a3c; color: white; }
-    .admin-btns { display: none; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+    .admin-btns { display: none; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
     .admin-btns.visible { display: flex; }
-    .btn-sold, .btn-delete, .btn-photo, .btn-edit { flex: 1; min-width: calc(50% - 3px); padding: 6px; border: none; border-radius: 5px; font-size: 0.75rem; cursor: pointer; font-weight: bold; transition: opacity 0.2s; }
+    .btn-sold, .btn-delete, .btn-photo, .btn-edit { flex: 1; min-width: calc(50% - 3px); padding: 6px; border: none; border-radius: 5px; font-size: 0.72rem; cursor: pointer; font-weight: bold; transition: opacity 0.2s; }
     .btn-sold { background: #f39c12; color: white; }
     .btn-sold:hover { opacity: 0.85; }
     .btn-delete { background: #e74c3c; color: white; }
@@ -67,12 +71,12 @@
     .btn-photo:hover { opacity: 0.85; }
     .btn-edit { background: #27ae60; color: white; }
     .btn-edit:hover { opacity: 0.85; }
-    #cart-float { position: fixed; bottom: 24px; right: 24px; background: #2c1810; color: white; border: none; border-radius: 50px; padding: 14px 20px; font-size: 1rem; font-weight: bold; cursor: pointer; box-shadow: 0 4px 16px rgba(0,0,0,0.3); z-index: 900; display: none; align-items: center; gap: 8px; transition: transform 0.2s; font-family: inherit; }
+    #cart-float { position: fixed; bottom: 24px; right: 16px; background: #2c1810; color: white; border: none; border-radius: 50px; padding: 13px 18px; font-size: 0.95rem; font-weight: bold; cursor: pointer; box-shadow: 0 4px 16px rgba(0,0,0,0.3); z-index: 900; display: none; align-items: center; gap: 8px; transition: transform 0.2s; font-family: inherit; }
     #cart-float:hover { transform: scale(1.05); }
     #cart-badge { background: #e74c3c; color: white; border-radius: 50%; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; }
     #cart-modal, #edit-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 999; align-items: center; justify-content: center; padding: 20px; }
     #cart-modal .modal-box { background: white; border-radius: 12px; padding: 24px; width: 100%; max-width: 460px; box-shadow: 0 8px 32px rgba(0,0,0,0.3); max-height: 90vh; overflow-y: auto; }
-    #edit-modal .modal-box { background: white; border-radius: 12px; padding: 24px; width: 100%; max-width: 420px; box-shadow: 0 8px 32px rgba(0,0,0,0.3); max-height: 90vh; overflow-y: auto; }
+    #edit-modal .modal-box { background: white; border-radius: 12px; padding: 24px; width: 100%; max-width: 440px; box-shadow: 0 8px 32px rgba(0,0,0,0.3); max-height: 90vh; overflow-y: auto; }
     #cart-modal h3, #edit-modal h3 { margin-bottom: 16px; color: #2c1810; font-size: 1.1rem; }
     .cart-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #eee; gap: 10px; }
     .cart-item-title { font-size: 0.9rem; font-weight: bold; color: #2c1810; flex: 1; }
@@ -91,64 +95,69 @@
     #edit-modal .field-label { font-size: 0.78rem; color: #666; font-weight: bold; display: block; margin-bottom: 4px; }
     #edit-modal input, #edit-modal textarea { display: block; width: 100%; padding: 8px 12px; border: 1px solid #c9a87c; border-radius: 6px; font-size: 0.95rem; font-family: inherit; outline: none; }
     #edit-modal input:focus, #edit-modal textarea:focus { border-color: #8b4513; }
-    #edit-modal textarea { resize: vertical; min-height: 80px; }
-    #edit-modal .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
+    #edit-modal textarea { resize: vertical; min-height: 70px; }
+    #edit-modal .modal-actions { display: flex; gap: 10px; margin-top: 16px; }
     #edit-modal .btn-save { flex: 1; padding: 10px; background: #2c7a3c; color: white; border: none; border-radius: 6px; font-size: 0.95rem; font-weight: bold; cursor: pointer; }
     #edit-modal .btn-save:hover { opacity: 0.85; }
     #edit-modal .btn-cancel { flex: 1; padding: 10px; background: #eee; color: #555; border: none; border-radius: 6px; font-size: 0.95rem; font-weight: bold; cursor: pointer; }
     #edit-modal .btn-cancel:hover { background: #ddd; }
-    #edit-modal .cat-row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; margin-top: 4px; margin-bottom: 16px; }
-    #edit-modal .cat-btn { padding: 10px 4px; border: 1.5px solid #c9a87c; background: white; color: #2c1810; border-radius: 8px; font-size: 0.85rem; font-weight: bold; cursor: pointer; font-family: inherit; transition: all 0.15s; line-height: 1.2; text-align: center; }
+    #edit-modal .cat-section-label { font-size: 0.7rem; color: #999; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; margin: 10px 0 5px; }
+    #edit-modal .cat-row { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 4px; }
+    #edit-modal .cat-btn { padding: 7px 11px; border: 1.5px solid #c9a87c; background: white; color: #2c1810; border-radius: 20px; font-size: 0.8rem; font-weight: bold; cursor: pointer; font-family: inherit; transition: all 0.15s; }
     #edit-modal .cat-btn:hover { background: #fdf6ec; }
     #edit-modal .cat-btn.active { background: #2c1810; color: #fdf6ec; border-color: #2c1810; }
-    .empty-state { text-align: center; padding: 80px 20px; color: #999; grid-column: 1 / -1; }
-    .empty-state .icon { font-size: 4rem; margin-bottom: 16px; }
-    .empty-state p { font-size: 1.1rem; }
-    .admin-bar { background: #fff3cd; border: 1px solid #ffc107; padding: 10px 20px; text-align: center; font-size: 0.85rem; color: #856404; }
-    .admin-bar button { margin-left: 10px; padding: 4px 12px; border: 1px solid #856404; background: transparent; border-radius: 4px; cursor: pointer; color: #856404; font-weight: bold; }
+    .empty-state { text-align: center; padding: 60px 20px; color: #999; grid-column: 1 / -1; }
+    .empty-state .icon { font-size: 3.5rem; margin-bottom: 12px; }
+    .empty-state p { font-size: 1rem; }
+    .admin-bar { background: #fff3cd; border: 1px solid #ffc107; padding: 8px 16px; text-align: center; font-size: 0.82rem; color: #856404; }
+    .admin-bar button { margin-left: 10px; padding: 3px 10px; border: 1px solid #856404; background: transparent; border-radius: 4px; cursor: pointer; color: #856404; font-weight: bold; }
     #pagination { display: none; justify-content: center; align-items: center; gap: 14px; padding: 12px 20px 28px; flex-wrap: wrap; }
     #pagination button { padding: 8px 18px; border: 1.5px solid #c9a87c; background: white; color: #2c1810; border-radius: 8px; cursor: pointer; font-weight: bold; font-family: inherit; font-size: 0.9rem; transition: all 0.15s; }
     #pagination button:hover:not(:disabled) { background: #2c1810; color: #fdf6ec; }
     #pagination button:disabled { opacity: 0.35; cursor: not-allowed; }
     #pagination span { color: #555; font-size: 0.9rem; font-weight: bold; }
     @media (max-width: 480px) {
-      header h1 { font-size: 1.5rem; }
-      .grid { grid-template-columns: repeat(2, 1fr); gap: 12px; padding: 16px 10px; }
-      .book-info { padding: 10px; }
-      .book-title { font-size: 0.85rem; }
+      header h1 { font-size: 1.4rem; }
+      .grid { grid-template-columns: repeat(2, 1fr); gap: 10px; padding: 14px 10px; }
+      .book-info { padding: 9px; }
+      .book-title { font-size: 0.82rem; }
       .price-sale { font-size: 1.1rem; }
+      .section-btn { font-size: 0.88rem; padding: 11px 6px 9px; }
     }
   </style>
 </head>
 <body>
 
 <header>
-  <h1>📚 Mis Libros</h1>
-  <p>Libros usados en excelente estado</p>
+  <h1>✡️ Tienda</h1>
+  <p>Libros y cosas del hogar</p>
 </header>
 
 <div class="top-bar">
   <span id="book-count">Cargando...</span>
-  <a href="/admin.html">+ Agregar libro</a>
+  <a href="/admin.html">+ Agregar</a>
 </div>
 
 <div id="admin-bar" class="admin-bar" style="display:none">
-  Modo administrador activo — puedes marcar libros como vendidos o eliminarlos
+  Modo administrador — puedes editar, vender o eliminar
   <button onclick="toggleAdmin()">Salir</button>
 </div>
 
-<div class="filters">
-  <input type="text" id="search" placeholder="Buscar por titulo o autor..." oninput="onSearchChange()">
+<!-- Selector de sección -->
+<div class="section-switcher">
+  <button class="section-btn active" id="sec-libros" onclick="setSection('libros')">
+    <span class="sec-icon">📚</span> Libros
+  </button>
+  <button class="section-btn" id="sec-casa" onclick="setSection('casa')">
+    <span class="sec-icon">🏠</span> Casa
+  </button>
 </div>
 
-<div class="tabs" id="tabs">
-  <button class="tab active" data-cat="todos" onclick="setTab('todos')">Todos <span class="count" id="count-todos"></span></button>
-  <button class="tab" data-cat="hebreo" onclick="setTab('hebreo')">Hebreo <span class="count" id="count-hebreo"></span></button>
-  <button class="tab" data-cat="ingles_espanol" onclick="setTab('ingles_espanol')">Torá Ing/Esp <span class="count" id="count-ingles_espanol"></span></button>
-  <button class="tab" data-cat="novelas_judias" onclick="setTab('novelas_judias')">Novelas Judías <span class="count" id="count-novelas_judias"></span></button>
-  <button class="tab" data-cat="seculares" onclick="setTab('seculares')">Seculares <span class="count" id="count-seculares"></span></button>
-  <button class="tab" data-cat="ninos" onclick="setTab('ninos')">Niños <span class="count" id="count-ninos"></span></button>
-  <button class="tab" data-cat="mujeres" onclick="setTab('mujeres')">Mujeres <span class="count" id="count-mujeres"></span></button>
+<!-- Pestañas de categoría (se renderizan por JS) -->
+<div class="cat-tabs" id="cat-tabs"></div>
+
+<div class="filters">
+  <input type="text" id="search" placeholder="Buscar..." oninput="onSearchChange()">
 </div>
 
 <div class="grid" id="grid"></div>
@@ -177,31 +186,39 @@
 
 <div id="edit-modal">
   <div class="modal-box" onclick="event.stopPropagation()">
-    <h3>Editar libro</h3>
+    <h3>Editar</h3>
     <label>
-      <span class="field-label">TÍTULO</span>
-      <input id="edit-title" type="text" placeholder="Título del libro">
+      <span class="field-label">TÍTULO / NOMBRE</span>
+      <input id="edit-title" type="text" placeholder="Nombre">
     </label>
     <label>
-      <span class="field-label">AUTOR</span>
-      <input id="edit-author" type="text" placeholder="Autor">
+      <span class="field-label">AUTOR / DETALLE</span>
+      <input id="edit-author" type="text" placeholder="Autor o descripción breve">
     </label>
     <label>
-      <span class="field-label">DETALLE</span>
-      <textarea id="edit-detail" placeholder="Descripción, estado, notas..."></textarea>
+      <span class="field-label">DESCRIPCIÓN</span>
+      <textarea id="edit-detail" placeholder="Notas, estado..."></textarea>
     </label>
     <label>
       <span class="field-label">PRECIO ($)</span>
       <input id="edit-price" type="number" min="0" step="1" placeholder="0">
     </label>
     <span class="field-label">CATEGORÍAS (puede elegir varias)</span>
-    <div class="cat-row" id="edit-cat-row">
-      <button type="button" class="cat-btn" data-cat="hebreo" onclick="toggleEditCategory('hebreo')">Hebreo</button>
+    <div class="cat-section-label">📚 Libros</div>
+    <div class="cat-row" id="edit-cat-libros">
+      <button type="button" class="cat-btn" data-cat="hebreo"         onclick="toggleEditCategory('hebreo')">Hebreo</button>
       <button type="button" class="cat-btn" data-cat="ingles_espanol" onclick="toggleEditCategory('ingles_espanol')">Torá Ing/Esp</button>
       <button type="button" class="cat-btn" data-cat="novelas_judias" onclick="toggleEditCategory('novelas_judias')">Novelas Judías</button>
-      <button type="button" class="cat-btn" data-cat="seculares" onclick="toggleEditCategory('seculares')">Seculares</button>
-      <button type="button" class="cat-btn" data-cat="ninos" onclick="toggleEditCategory('ninos')">Niños</button>
-      <button type="button" class="cat-btn" data-cat="mujeres" onclick="toggleEditCategory('mujeres')">Mujeres</button>
+      <button type="button" class="cat-btn" data-cat="ninos"          onclick="toggleEditCategory('ninos')">Niños</button>
+      <button type="button" class="cat-btn" data-cat="mujeres"        onclick="toggleEditCategory('mujeres')">Mujeres</button>
+      <button type="button" class="cat-btn" data-cat="seculares"      onclick="toggleEditCategory('seculares')">Seculares</button>
+    </div>
+    <div class="cat-section-label">🏠 Casa</div>
+    <div class="cat-row" id="edit-cat-casa">
+      <button type="button" class="cat-btn" data-cat="cocina"      onclick="toggleEditCategory('cocina')">Cocina</button>
+      <button type="button" class="cat-btn" data-cat="decoracion"  onclick="toggleEditCategory('decoracion')">Decoración</button>
+      <button type="button" class="cat-btn" data-cat="dormitorio"  onclick="toggleEditCategory('dormitorio')">Dormitorio</button>
+      <button type="button" class="cat-btn" data-cat="bano"        onclick="toggleEditCategory('bano')">Baño</button>
     </div>
     <div class="modal-actions">
       <button class="btn-save" onclick="saveEdit()">Guardar</button>
@@ -211,31 +228,97 @@
 </div>
 
 <script>
+  const SECTIONS = {
+    libros: {
+      tabs: [
+        { cat: 'todos_libros',   label: 'Todos' },
+        { cat: 'hebreo',         label: 'Hebreo' },
+        { cat: 'ingles_espanol', label: 'Torá Ing/Esp' },
+        { cat: 'novelas_judias', label: 'Novelas Judías' },
+        { cat: 'ninos',          label: 'Niños' },
+        { cat: 'mujeres',        label: 'Mujeres' },
+        { cat: 'seculares',      label: 'Seculares' },
+      ],
+      cats: new Set(['hebreo','ingles_espanol','novelas_judias','seculares','ninos','mujeres']),
+    },
+    casa: {
+      tabs: [
+        { cat: 'todos_casa',  label: 'Todos' },
+        { cat: 'cocina',      label: 'Cocina' },
+        { cat: 'decoracion',  label: 'Decoración' },
+        { cat: 'dormitorio',  label: 'Dormitorio' },
+        { cat: 'bano',        label: 'Baño' },
+      ],
+      cats: new Set(['cocina','decoracion','dormitorio','bano']),
+    },
+  };
+
   let allBooks = [];
   let adminMode = false;
   let adminPassword = '';
   let cart = [];
-
-  // Paginacion
   const PAGE_SIZE = 20;
   let currentPage = 1;
+  let currentSection = 'libros';
+  let currentCat = 'todos_libros';
 
-  let currentCategory = 'todos';
+  function bookCategories(b) {
+    if (Array.isArray(b.categories) && b.categories.length > 0) return b.categories;
+    return [(b.category || 'novelas_judias').toLowerCase()];
+  }
 
-  function setTab(cat) {
-    currentCategory = cat;
+  function itemSection(b) {
+    for (const c of bookCategories(b)) {
+      if (SECTIONS.casa.cats.has(c)) return 'casa';
+    }
+    return 'libros';
+  }
+
+  function setSection(sec) {
+    currentSection = sec;
+    currentCat = 'todos_' + sec;
     currentPage = 1;
-    document.querySelectorAll('#tabs .tab').forEach(t => {
-      t.classList.toggle('active', t.dataset.cat === cat);
+    document.getElementById('sec-libros').classList.toggle('active', sec === 'libros');
+    document.getElementById('sec-casa').classList.toggle('active', sec === 'casa');
+    renderTabs();
+    renderBooks();
+  }
+
+  function renderTabs() {
+    const tabs = document.getElementById('cat-tabs');
+    tabs.innerHTML = SECTIONS[currentSection].tabs.map(t => `
+      <button class="cat-tab ${currentCat === t.cat ? 'active' : ''}" onclick="setCat('${t.cat}')">
+        ${t.label} <span class="count" id="count-${t.cat}"></span>
+      </button>
+    `).join('');
+    updateTabCounts();
+  }
+
+  function setCat(cat) {
+    currentCat = cat;
+    currentPage = 1;
+    document.querySelectorAll('.cat-tab').forEach((el, i) => {
+      el.classList.toggle('active', SECTIONS[currentSection].tabs[i]?.cat === cat);
     });
     window.scrollTo({ top: 0, behavior: 'smooth' });
     renderBooks();
   }
 
-  function onSearchChange() {
-    currentPage = 1;
-    renderBooks();
+  function updateTabCounts() {
+    SECTIONS[currentSection].tabs.forEach(t => {
+      const el = document.getElementById('count-' + t.cat);
+      if (!el) return;
+      if (t.cat.startsWith('todos_')) {
+        const n = allBooks.filter(b => !b.sold && itemSection(b) === currentSection).length;
+        el.textContent = n ? `(${n})` : '';
+      } else {
+        const n = allBooks.filter(b => !b.sold && bookCategories(b).includes(t.cat)).length;
+        el.textContent = n ? `(${n})` : '';
+      }
+    });
   }
+
+  function onSearchChange() { currentPage = 1; renderBooks(); }
 
   function goToPage(p) {
     currentPage = p;
@@ -263,37 +346,16 @@
   async function loadBooks() {
     const res = await fetch('/api/books');
     allBooks = await res.json();
+    renderTabs();
     renderBooks();
-  }
-
-  function bookCategories(b) {
-    if (Array.isArray(b.categories) && b.categories.length > 0) return b.categories;
-    const c = (b.category || 'novelas_judias').toLowerCase();
-    return [c];
-  }
-
-  function updateTabCounts() {
-    const counts = { todos: 0, hebreo: 0, ingles_espanol: 0, novelas_judias: 0, seculares: 0, ninos: 0, mujeres: 0 };
-    allBooks.forEach(b => {
-      if (b.sold) return;
-      counts.todos++;
-      bookCategories(b).forEach(c => { if (c in counts) counts[c]++; });
-    });
-    document.getElementById('count-todos').textContent          = counts.todos          ? `(${counts.todos})`          : '';
-    document.getElementById('count-hebreo').textContent         = counts.hebreo         ? `(${counts.hebreo})`         : '';
-    document.getElementById('count-ingles_espanol').textContent = counts.ingles_espanol ? `(${counts.ingles_espanol})` : '';
-    document.getElementById('count-novelas_judias').textContent = counts.novelas_judias ? `(${counts.novelas_judias})` : '';
-    document.getElementById('count-seculares').textContent      = counts.seculares      ? `(${counts.seculares})`      : '';
-    document.getElementById('count-ninos').textContent          = counts.ninos          ? `(${counts.ninos})`          : '';
-    document.getElementById('count-mujeres').textContent        = counts.mujeres        ? `(${counts.mujeres})`        : '';
   }
 
   function renderBooks() {
     updateTabCounts();
     const q = document.getElementById('search').value.toLowerCase().trim();
-    let books = allBooks;
-    if (currentCategory !== 'todos') {
-      books = books.filter(b => bookCategories(b).includes(currentCategory));
+    let books = allBooks.filter(b => itemSection(b) === currentSection);
+    if (!currentCat.startsWith('todos_')) {
+      books = books.filter(b => bookCategories(b).includes(currentCat));
     }
     if (q) {
       books = books.filter(b =>
@@ -302,45 +364,35 @@
       );
     }
     const available = books.filter(b => !b.sold);
-    const sold = books.filter(b => b.sold);
-    // Ordenar de mas caro a mas barato. Libros sin precio van al final.
-    const byPriceDesc = (a, b) => {
-      const pa = a.price != null ? a.price : -Infinity;
-      const pb = b.price != null ? b.price : -Infinity;
-      return pb - pa;
-    };
-    available.sort(byPriceDesc);
-    sold.sort(byPriceDesc);
+    const sold      = books.filter(b =>  b.sold);
+    const byPrice = (a, b) => ((b.price ?? -Infinity) - (a.price ?? -Infinity));
+    available.sort(byPrice); sold.sort(byPrice);
     const sorted = [...available, ...sold];
 
-    const total = sorted.length;
-    const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+    const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
     if (currentPage > totalPages) currentPage = totalPages;
-    if (currentPage < 1) currentPage = 1;
-    const startIdx = (currentPage - 1) * PAGE_SIZE;
-    const pageBooks = sorted.slice(startIdx, startIdx + PAGE_SIZE);
+    const pageBooks = sorted.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
     const count = available.length;
     document.getElementById('book-count').textContent =
-      count === 0 ? 'Sin libros disponibles' :
-      count === 1 ? '1 libro disponible' :
-      `${count} libros disponibles`;
+      count === 0 ? 'Sin artículos disponibles' :
+      count === 1 ? '1 artículo disponible' : `${count} artículos disponibles`;
 
+    const isCasa = currentSection === 'casa';
     const grid = document.getElementById('grid');
-    const pag = document.getElementById('pagination');
+    const pag  = document.getElementById('pagination');
 
     if (sorted.length === 0) {
-      grid.innerHTML = `<div class="empty-state"><div class="icon">📖</div><p>${q ? 'No se encontraron libros con esa busqueda' : 'Todavia no hay libros cargados'}</p></div>`;
-      pag.style.display = 'none';
-      pag.innerHTML = '';
+      grid.innerHTML = `<div class="empty-state"><div class="icon">${isCasa ? '🏠' : '📖'}</div><p>${q ? 'No se encontraron resultados' : 'Todavía no hay artículos aquí'}</p></div>`;
+      pag.style.display = 'none'; pag.innerHTML = '';
       return;
     }
 
     grid.innerHTML = pageBooks.map(book => `
       <div class="book-card ${book.sold ? 'sold' : ''}">
         ${book.hasPhoto
-          ? `<img class="book-img" src="/api/books/${book.id}/photo?v=${book.photoVersion}" alt="${escHtml(book.title)}" loading="lazy">`
-          : `<div class="book-img-placeholder">📚</div>`}
+          ? `<img class="${isCasa ? 'item-img' : 'book-img'}" src="/api/books/${book.id}/photo?v=${book.photoVersion}" alt="${escHtml(book.title)}" loading="lazy">`
+          : `<div class="${isCasa ? 'item-img-placeholder' : 'book-img-placeholder'}">${isCasa ? '🏠' : '📚'}</div>`}
         <div class="book-info">
           <div class="book-title">${escHtml(book.title)}</div>
           ${book.author ? `<div class="book-author">${escHtml(book.author)}</div>` : ''}
@@ -348,17 +400,15 @@
           <div class="price-block">
             ${book.price != null
               ? `<span class="price-sale">${formatPrice(book.price)}</span>${book.originalPrice ? `<span class="price-original">${formatPrice(book.originalPrice)}</span><span class="discount-badge">-40%</span>` : ''}`
-              : `<span style="color:#aaa;font-size:0.85rem;font-style:italic">Sin precio aún</span>`}
+              : `<span style="color:#aaa;font-size:0.82rem;font-style:italic">Sin precio aún</span>`}
           </div>
           ${!book.sold && book.price != null ? `<button class="btn-cart ${cart.includes(book.id) ? 'in-cart' : ''}" onclick="toggleCart('${book.id}')">
             ${cart.includes(book.id) ? '✓ Seleccionado' : '🛒 Lo quiero'}
           </button>` : ''}
           <div class="admin-btns ${adminMode ? 'visible' : ''}">
-            <button class="btn-edit" onclick="editBook('${book.id}')">✏️ Editar</button>
-            <button class="btn-photo" onclick="changePhoto('${book.id}')">📷 Foto</button>
-            <button class="btn-sold" onclick="markSold('${book.id}', ${!book.sold})">
-              ${book.sold ? '↩ Disponible' : '✓ Vendido'}
-            </button>
+            <button class="btn-edit"   onclick="editBook('${book.id}')">✏️ Editar</button>
+            <button class="btn-photo"  onclick="changePhoto('${book.id}')">📷 Foto</button>
+            <button class="btn-sold"   onclick="markSold('${book.id}', ${!book.sold})">${book.sold ? '↩ Disponible' : '✓ Vendido'}</button>
             <button class="btn-delete" onclick="deleteBook('${book.id}')">Eliminar</button>
           </div>
         </div>
@@ -368,34 +418,27 @@
     if (totalPages > 1) {
       pag.style.display = 'flex';
       pag.innerHTML = `
-        <button onclick="goToPage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>← Anterior</button>
-        <span>Pagina ${currentPage} de ${totalPages}</span>
-        <button onclick="goToPage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>Siguiente →</button>
+        <button onclick="goToPage(${currentPage-1})" ${currentPage===1?'disabled':''}>← Anterior</button>
+        <span>Página ${currentPage} de ${totalPages}</span>
+        <button onclick="goToPage(${currentPage+1})" ${currentPage===totalPages?'disabled':''}>Siguiente →</button>
       `;
-    } else {
-      pag.style.display = 'none';
-      pag.innerHTML = '';
-    }
+    } else { pag.style.display = 'none'; pag.innerHTML = ''; }
   }
 
   function toggleCart(id) {
     const idx = cart.indexOf(id);
-    if (idx === -1) cart.push(id);
-    else cart.splice(idx, 1);
-    updateCartFloat();
-    renderBooks();
+    if (idx === -1) cart.push(id); else cart.splice(idx, 1);
+    updateCartFloat(); renderBooks();
   }
 
   function updateCartFloat() {
-    const btn = document.getElementById('cart-float');
-    const badge = document.getElementById('cart-badge');
-    badge.textContent = cart.length;
-    btn.style.display = cart.length > 0 ? 'flex' : 'none';
+    document.getElementById('cart-badge').textContent = cart.length;
+    document.getElementById('cart-float').style.display = cart.length > 0 ? 'flex' : 'none';
   }
 
   function openCart() {
     const items = cart.map(id => allBooks.find(b => b.id === id)).filter(Boolean);
-    const total = items.reduce((s, b) => s + b.price, 0);
+    const total = items.reduce((s, b) => s + (b.price || 0), 0);
     document.getElementById('cart-items').innerHTML = items.map(b => `
       <div class="cart-item">
         <div>
@@ -403,7 +446,7 @@
           ${b.author ? `<div class="cart-item-author">${escHtml(b.author)}</div>` : ''}
         </div>
         <div class="cart-item-price">${formatPrice(b.price)}</div>
-        <button class="cart-item-remove" onclick="toggleCart('${b.id}'); openCart();">✕</button>
+        <button class="cart-item-remove" onclick="toggleCart('${b.id}');openCart();">✕</button>
       </div>
     `).join('');
     document.getElementById('cart-total-price').textContent = formatPrice(total);
@@ -411,25 +454,17 @@
   }
 
   function closeCart() { document.getElementById('cart-modal').style.display = 'none'; }
-
-  document.getElementById('cart-modal').addEventListener('click', function(e) {
-    if (e.target === this) closeCart();
-  });
+  document.getElementById('cart-modal').addEventListener('click', function(e) { if (e.target===this) closeCart(); });
 
   function buildMessage() {
     const items = cart.map(id => allBooks.find(b => b.id === id)).filter(Boolean);
-    const total = items.reduce((s, b) => s + b.price, 0);
-    const lines = items.map(b => `- ${b.title}${b.author ? ' (' + b.author + ')' : ''}: ${formatPrice(b.price)}`).join('\n');
-    return `Hola! Me interesan estos libros:\n${lines}\n\nTotal: ${formatPrice(total)}`;
+    const total = items.reduce((s, b) => s + (b.price || 0), 0);
+    const lines = items.map(b => `- ${b.title}${b.author?' ('+b.author+')':''}: ${formatPrice(b.price)}`).join('\n');
+    return `Hola! Me interesan estos artículos:\n${lines}\n\nTotal: ${formatPrice(total)}`;
   }
 
-  function sendWhatsApp() {
-    window.open(`https://wa.me/56997423516?text=${encodeURIComponent(buildMessage())}`, '_blank');
-  }
-
-  function sendEmail() {
-    window.open(`mailto:matis.lib@gmail.com?subject=${encodeURIComponent('Consulta por libros')}&body=${encodeURIComponent(buildMessage())}`, '_blank');
-  }
+  function sendWhatsApp() { window.open(`https://wa.me/56997423516?text=${encodeURIComponent(buildMessage())}`, '_blank'); }
+  function sendEmail()    { window.open(`mailto:matis.lib@gmail.com?subject=${encodeURIComponent('Consulta')}&body=${encodeURIComponent(buildMessage())}`, '_blank'); }
 
   async function markSold(id, sold) {
     const res = await fetch(`/api/books/${id}`, {
@@ -437,24 +472,20 @@
       headers: { 'Content-Type': 'application/json', 'X-Admin-Password': adminPassword },
       body: JSON.stringify({ sold })
     });
-    if (res.status === 403) { alert('Contrasena incorrecta'); return; }
+    if (res.status === 403) { alert('Contraseña incorrecta'); return; }
     await loadBooks();
   }
 
   async function deleteBook(id) {
-    if (!confirm('Eliminar este libro?')) return;
-    const res = await fetch(`/api/books/${id}`, {
-      method: 'DELETE',
-      headers: { 'X-Admin-Password': adminPassword }
-    });
-    if (res.status === 403) { alert('Contrasena incorrecta'); return; }
+    if (!confirm('Eliminar este artículo?')) return;
+    const res = await fetch(`/api/books/${id}`, { method: 'DELETE', headers: { 'X-Admin-Password': adminPassword } });
+    if (res.status === 403) { alert('Contraseña incorrecta'); return; }
     allBooks = allBooks.filter(b => b.id !== id);
     renderBooks();
   }
 
   const photoInput = document.createElement('input');
-  photoInput.type = 'file';
-  photoInput.accept = 'image/*';
+  photoInput.type = 'file'; photoInput.accept = 'image/*';
   document.body.appendChild(photoInput);
 
   function compressImage(file) {
@@ -464,8 +495,7 @@
         const img = new Image();
         img.onload = () => {
           const scale = Math.min(1, 900 / img.width);
-          const w = Math.round(img.width * scale);
-          const h = Math.round(img.height * scale);
+          const w = Math.round(img.width * scale), h = Math.round(img.height * scale);
           const canvas = document.createElement('canvas');
           canvas.width = w; canvas.height = h;
           canvas.getContext('2d').drawImage(img, 0, 0, w, h);
@@ -487,9 +517,8 @@
         headers: { 'Content-Type': 'application/json', 'X-Admin-Password': adminPassword },
         body: JSON.stringify({ photo })
       });
-      if (res.status === 403) { alert('Contrasena incorrecta'); return; }
-      await loadBooks();
-      photoInput.value = '';
+      if (res.status === 403) { alert('Contraseña incorrecta'); return; }
+      await loadBooks(); photoInput.value = '';
     };
     photoInput.click();
   }
@@ -499,52 +528,44 @@
 
   function toggleEditCategory(cat) {
     const idx = editCategories.indexOf(cat);
-    if (idx === -1) {
-      editCategories.push(cat);
-    } else if (editCategories.length > 1) {
-      editCategories.splice(idx, 1);
-    }
-    document.querySelectorAll('#edit-cat-row .cat-btn').forEach(b => {
+    if (idx === -1) editCategories.push(cat);
+    else if (editCategories.length > 1) editCategories.splice(idx, 1);
+    document.querySelectorAll('#edit-modal .cat-btn').forEach(b => {
       b.classList.toggle('active', editCategories.includes(b.dataset.cat));
     });
   }
 
   function setEditCategories(cats) {
     editCategories = cats.length ? [...cats] : ['novelas_judias'];
-    document.querySelectorAll('#edit-cat-row .cat-btn').forEach(b => {
+    document.querySelectorAll('#edit-modal .cat-btn').forEach(b => {
       b.classList.toggle('active', editCategories.includes(b.dataset.cat));
     });
   }
 
-  document.getElementById('edit-modal').addEventListener('click', function(e) {
-    if (e.target === this) closeEdit();
-  });
+  document.getElementById('edit-modal').addEventListener('click', function(e) { if (e.target===this) closeEdit(); });
 
   function editBook(id) {
     const book = allBooks.find(b => b.id === id);
     if (!book) return;
     editingId = id;
-    document.getElementById('edit-title').value = book.title || '';
+    document.getElementById('edit-title').value  = book.title  || '';
     document.getElementById('edit-author').value = book.author || '';
     document.getElementById('edit-detail').value = book.detail || '';
-    document.getElementById('edit-price').value = book.price != null ? book.price : '';
+    document.getElementById('edit-price').value  = book.price != null ? book.price : '';
     setEditCategories(bookCategories(book));
     document.getElementById('edit-modal').style.display = 'flex';
     document.getElementById('edit-title').focus();
   }
 
-  function closeEdit() {
-    document.getElementById('edit-modal').style.display = 'none';
-    editingId = null;
-  }
+  function closeEdit() { document.getElementById('edit-modal').style.display = 'none'; editingId = null; }
 
   async function saveEdit() {
     if (!editingId) return;
-    const title = document.getElementById('edit-title').value.trim();
+    const title  = document.getElementById('edit-title').value.trim();
     const author = document.getElementById('edit-author').value.trim();
     const detail = document.getElementById('edit-detail').value.trim();
-    const price = parseFloat(document.getElementById('edit-price').value);
-    if (!title) { alert('El título no puede estar vacío'); return; }
+    const price  = parseFloat(document.getElementById('edit-price').value);
+    if (!title) { alert('El nombre no puede estar vacío'); return; }
     if (isNaN(price) || price < 0) { alert('Ingresa un precio válido'); return; }
     const res = await fetch(`/api/books/${editingId}`, {
       method: 'PATCH',
@@ -552,8 +573,7 @@
       body: JSON.stringify({ title, author, detail, price, categories: editCategories })
     });
     if (res.status === 403) { alert('Contraseña incorrecta'); return; }
-    closeEdit();
-    await loadBooks();
+    closeEdit(); await loadBooks();
   }
 
   function formatPrice(p) {
@@ -562,39 +582,29 @@
   }
 
   function escHtml(s) {
-    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
 
   loadBooks();
 
-  // Service Worker con auto-update: si hay una version nueva, la activa y recarga.
   if ('serviceWorker' in navigator) {
     const wasControlled = !!navigator.serviceWorker.controller;
-
     navigator.serviceWorker.register('/sw.js').then(reg => {
-      // Fuerza chequeo de update en cada carga
       reg.update().catch(() => {});
-
-      // Si justo ya hay una version esperando, dile que tome el control
       if (reg.waiting) reg.waiting.postMessage('SKIP_WAITING');
-
       reg.addEventListener('updatefound', () => {
         const newSW = reg.installing;
         if (!newSW) return;
         newSW.addEventListener('statechange', () => {
-          if (newSW.state === 'installed' && navigator.serviceWorker.controller) {
+          if (newSW.state === 'installed' && navigator.serviceWorker.controller)
             newSW.postMessage('SKIP_WAITING');
-          }
         });
       });
     }).catch(() => {});
-
-    // Cuando una SW nueva toma el control, recargamos (excepto en la primera instalacion)
     let refreshing = false;
     navigator.serviceWorker.addEventListener('controllerchange', () => {
       if (refreshing || !wasControlled) return;
-      refreshing = true;
-      location.reload();
+      refreshing = true; location.reload();
     });
   }
 </script>

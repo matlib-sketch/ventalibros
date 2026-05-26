@@ -122,7 +122,23 @@ def init_db():
         conn.commit()
 
 # Categorias permitidas. Cualquier otra cosa se guarda como 'novelas_judias'.
-VALID_CATEGORIES = {'hebreo', 'ingles_espanol', 'novelas_judias', 'seculares', 'ninos', 'mujeres'}
+VALID_CATEGORIES = {
+    # libros
+    'hebreo', 'ingles_espanol', 'novelas_judias', 'seculares', 'ninos', 'mujeres',
+    # casa
+    'cocina', 'decoracion', 'dormitorio', 'bano',
+}
+
+SECTION_CATEGORIES = {
+    'libros': {'hebreo', 'ingles_espanol', 'novelas_judias', 'seculares', 'ninos', 'mujeres'},
+    'casa':   {'cocina', 'decoracion', 'dormitorio', 'bano'},
+}
+
+def _section_of(cat):
+    for section, cats in SECTION_CATEGORIES.items():
+        if cat in cats:
+            return section
+    return 'libros'
 
 def _clean_category(cat):
     if not cat:
