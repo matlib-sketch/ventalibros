@@ -119,6 +119,20 @@ def init_db():
                     "INSERT INTO schema_migrations (version, applied_at) VALUES (4, %s)",
                     (datetime.datetime.utcnow().isoformat(),)
                 )
+
+            # Migracion 5: cambiamos el descuento de 40% a 60%.
+            # price = original_price * 0.40
+            cur.execute("SELECT 1 FROM schema_migrations WHERE version = 5")
+            if not cur.fetchone():
+                import datetime
+                cur.execute(
+                    "UPDATE books SET price = ROUND((original_price * 0.40)::numeric, 0) "
+                    "WHERE original_price IS NOT NULL AND original_price > 0"
+                )
+                cur.execute(
+                    "INSERT INTO schema_migrations (version, applied_at) VALUES (5, %s)",
+                    (datetime.datetime.utcnow().isoformat(),)
+                )
         conn.commit()
 
 # Categorias permitidas. Cualquier otra cosa se guarda como 'novelas_judias'.
