@@ -154,11 +154,30 @@ def init_db():
                              price, photo, photos, sold, created_at, category, categories)
                         VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
                         ON CONFLICT (id) DO NOTHING
-                    """, (it['id'], it['title'], '', it['detail'], it['long'], None,
+                    """, (it['id'], it['title'], '', it['detail'], it['long'],
+                          it.get('original_price'),
                           it['price'], None, [], False, now, it['category'], [it['category']]))
                 cur.execute(
                     "INSERT INTO schema_migrations (version, applied_at) VALUES (6, %s)",
                     (now,)
+                )
+
+            # Migracion 7: rellenamos el precio internet de referencia
+            # (original_price) de los articulos de la seccion Casa cargados en la
+            # migracion 6 sin ese dato. El valor es el punto medio del rango de
+            # precio nuevo hoy en internet de cada equipo. Idempotente por id.
+            cur.execute("SELECT 1 FROM schema_migrations WHERE version = 7")
+            if not cur.fetchone():
+                import datetime
+                for it in CASA_SEED:
+                    if it.get('original_price') is not None:
+                        cur.execute(
+                            "UPDATE books SET original_price = %s WHERE id = %s",
+                            (it['original_price'], it['id'])
+                        )
+                cur.execute(
+                    "INSERT INTO schema_migrations (version, applied_at) VALUES (7, %s)",
+                    (datetime.datetime.utcnow().isoformat(),)
                 )
         conn.commit()
 
@@ -184,6 +203,8 @@ CASA_SEED = [
         'title': 'Refrigerador Samsung Side by Side 617L',
         'detail': '617 L · Side by Side · No Frost · Inverter · color Silver. Como nuevo (sept. 2020).',
         'price': 350000,
+        # Precio nuevo hoy en internet: $790.000 – $1.100.000 (punto medio).
+        'original_price': 945000,
         'category': 'cocina',
         'long': textwrap.dedent('''\
             Refrigerador Samsung Side by Side 617 Litros — RS65R5411M9/ZS (SpaceMax)
@@ -208,6 +229,8 @@ CASA_SEED = [
         'title': 'Microondas Grill Somela Reflection 3000 DGM',
         'detail': '30 L · grill 2 en 1 · puerta espejada. Impecable (jul. 2021).',
         'price': 45000,
+        # Precio nuevo hoy en internet: $99.990 – $129.990 (punto medio).
+        'original_price': 114990,
         'category': 'cocina',
         'long': textwrap.dedent('''\
             Microondas Grill Somela Reflection 3000 DGM — 30 Litros
@@ -232,6 +255,8 @@ CASA_SEED = [
         'title': 'Microondas Samsung ME83 — 23 L',
         'detail': '23 L · 700W · puerta espejada. Compacto, ideal depto. 3 años de uso.',
         'price': 32000,
+        # Precio nuevo hoy en internet: $60.000 – $85.000 (punto medio).
+        'original_price': 72500,
         'category': 'cocina',
         'long': textwrap.dedent('''\
             Microondas Samsung ME83 — 23 Litros
@@ -256,6 +281,8 @@ CASA_SEED = [
         'title': 'Lavavajillas Fensa Computer 9430 Inox',
         'detail': '14 cubiertos · acero inox · 6 programas. Impecable (jul. 2021).',
         'price': 140000,
+        # Precio nuevo hoy en internet: $239.990 – $409.990 (punto medio).
+        'original_price': 324990,
         'category': 'cocina',
         'long': textwrap.dedent('''\
             Lavavajillas Fensa Computer 9430 Inox — 14 Cubiertos
@@ -280,6 +307,8 @@ CASA_SEED = [
         'title': 'Hidrolavadora Bauker Fast Plus 1650 PSI',
         'detail': 'Alta presión 1650 PSI · 1400W · con todos los accesorios. Poco uso (1 año).',
         'price': 30000,
+        # Precio nuevo hoy en internet: $45.000 – $75.000 (punto medio).
+        'original_price': 60000,
         'category': 'herramientas',
         'long': textwrap.dedent('''\
             Hidrolavadora Bauker Fast Plus — Alta Presión 1650 PSI
@@ -303,6 +332,8 @@ CASA_SEED = [
         'title': 'Generador Inverter PowerPro XT35iG 3.5 KVA',
         'detail': 'Inverter 3.5 KVA gasolina · onda pura · solo 4 hrs de uso. Casi nuevo.',
         'price': 290000,
+        # Precio nuevo hoy en internet: $436.000 – $495.490 (punto medio).
+        'original_price': 465000,
         'category': 'herramientas',
         'long': textwrap.dedent('''\
             Generador Inverter PowerPro XT35iG — 3.5 KVA Gasolina

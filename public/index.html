@@ -467,9 +467,7 @@
           ${book.author ? `<div class="book-author">${escHtml(book.author)}</div>` : ''}
           ${book.detail ? `<div class="book-detail">${escHtml(book.detail)}</div>` : ''}
           <div class="price-block">
-            ${book.price != null
-              ? `<span class="price-sale">${formatPrice(book.price)}</span>${book.originalPrice ? `<span class="price-original">${formatPrice(book.originalPrice)}</span><span class="discount-badge">-60%</span>` : ''}`
-              : `<span style="color:#aaa;font-size:0.82rem;font-style:italic">Sin precio aún</span>`}
+            ${priceBlockHtml(book, 'color:#aaa;font-size:0.82rem;font-style:italic')}
           </div>
           ${!book.sold && book.price != null ? `<button class="btn-cart ${cart.includes(book.id) ? 'in-cart' : ''}" onclick="toggleCart('${book.id}')">
             ${cart.includes(book.id) ? '✓ Seleccionado' : '🛒 Lo quiero'}
@@ -628,9 +626,7 @@
   function renderDetailActions(book) {
     const el = document.getElementById('detail-actions');
     const priceEl = document.getElementById('detail-price');
-    priceEl.innerHTML = book.price != null
-      ? `<span class="price-sale">${formatPrice(book.price)}</span>${book.originalPrice ? `<span class="price-original">${formatPrice(book.originalPrice)}</span><span class="discount-badge">-60%</span>` : ''}`
-      : `<span style="color:#aaa;font-size:0.85rem;font-style:italic">Sin precio aún</span>`;
+    priceEl.innerHTML = priceBlockHtml(book, 'color:#aaa;font-size:0.85rem;font-style:italic');
 
     let html = '';
     if (!book.sold && book.price != null) {
@@ -841,6 +837,25 @@
   function formatPrice(p) {
     if (p == null) return '';
     return '$' + p.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  }
+
+  // Badge de descuento calculado a partir del precio internet (originalPrice)
+  // y el precio de venta. Asi cada articulo muestra su descuento real.
+  function discountBadge(book) {
+    if (!book.originalPrice || !book.price || book.originalPrice <= book.price) return '';
+    const pct = Math.round((1 - book.price / book.originalPrice) * 100);
+    return pct > 0 ? `<span class="discount-badge">-${pct}%</span>` : '';
+  }
+
+  // Bloque de precio: precio de venta + precio internet tachado + descuento.
+  function priceBlockHtml(book, emptyStyle) {
+    if (book.price == null) {
+      return `<span style="${emptyStyle}">Sin precio aún</span>`;
+    }
+    const ref = book.originalPrice
+      ? `<span class="price-original">${formatPrice(book.originalPrice)}</span>${discountBadge(book)}`
+      : '';
+    return `<span class="price-sale">${formatPrice(book.price)}</span>${ref}`;
   }
 
   function escHtml(s) {
