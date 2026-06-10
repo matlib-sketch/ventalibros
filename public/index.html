@@ -106,6 +106,40 @@
     #edit-modal .cat-btn { padding: 7px 11px; border: 1.5px solid #c9a87c; background: white; color: #2c1810; border-radius: 20px; font-size: 0.8rem; font-weight: bold; cursor: pointer; font-family: inherit; transition: all 0.15s; }
     #edit-modal .cat-btn:hover { background: #fdf6ec; }
     #edit-modal .cat-btn.active { background: #2c1810; color: #fdf6ec; border-color: #2c1810; }
+
+    /* ---- Editor de fotos (galeria) en el modal de edicion ---- */
+    .gallery-editor { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+    .gallery-editor .gphoto { position: relative; width: 64px; height: 64px; border-radius: 8px; overflow: hidden; border: 1px solid #d4c4a8; background: #f5ead8; }
+    .gallery-editor .gphoto img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .gallery-editor .gphoto .cover-tag { position: absolute; bottom: 0; left: 0; right: 0; background: rgba(44,24,16,0.78); color: #fdf6ec; font-size: 0.55rem; font-weight: bold; text-align: center; padding: 1px 0; letter-spacing: 0.3px; }
+    .gallery-editor .gphoto .gremove { position: absolute; top: 2px; right: 2px; width: 18px; height: 18px; border: none; border-radius: 50%; background: rgba(0,0,0,0.65); color: white; font-size: 0.7rem; cursor: pointer; line-height: 1; display: flex; align-items: center; justify-content: center; padding: 0; }
+    .gallery-editor .gadd { width: 64px; height: 64px; border: 2px dashed #c9a87c; border-radius: 8px; background: #fdf6ec; color: #a08060; font-size: 1.6rem; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+    .gallery-editor .gadd:hover { border-color: #8b4513; }
+    .gallery-hint { font-size: 0.7rem; color: #999; margin: -6px 0 12px; }
+
+    /* ---- Modal de detalle (al hacer click en la foto) ---- */
+    #detail-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 1000; align-items: center; justify-content: center; padding: 14px; }
+    #detail-modal .detail-box { background: white; border-radius: 14px; width: 100%; max-width: 520px; max-height: 92vh; overflow-y: auto; position: relative; box-shadow: 0 10px 44px rgba(0,0,0,0.45); }
+    .detail-close { position: absolute; top: 10px; right: 10px; z-index: 6; width: 36px; height: 36px; border-radius: 50%; border: none; background: rgba(0,0,0,0.55); color: white; font-size: 1.2rem; cursor: pointer; line-height: 1; display: flex; align-items: center; justify-content: center; }
+    .detail-main { position: relative; width: 100%; aspect-ratio: 1/1; background: #1a1a1a; display: flex; align-items: center; justify-content: center; overflow: hidden; border-radius: 14px 14px 0 0; touch-action: pan-y; user-select: none; }
+    .detail-main img { width: 100%; height: 100%; object-fit: contain; display: block; }
+    .detail-main .detail-placeholder { font-size: 5rem; color: #555; }
+    .gal-arrow { position: absolute; top: 50%; transform: translateY(-50%); width: 40px; height: 40px; border: none; border-radius: 50%; background: rgba(0,0,0,0.5); color: white; font-size: 1.7rem; cursor: pointer; display: flex; align-items: center; justify-content: center; line-height: 1; padding: 0; }
+    .gal-arrow:hover { background: rgba(0,0,0,0.75); }
+    .gal-prev { left: 8px; } .gal-next { right: 8px; }
+    .gal-counter { position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.55); color: white; font-size: 0.72rem; padding: 2px 10px; border-radius: 12px; }
+    .detail-thumbs { display: flex; gap: 8px; padding: 10px 14px 0; overflow-x: auto; }
+    .detail-thumb { width: 52px; height: 52px; flex: 0 0 auto; border-radius: 8px; object-fit: cover; cursor: pointer; border: 2px solid transparent; opacity: 0.7; transition: opacity 0.15s, border-color 0.15s; }
+    .detail-thumb.active { border-color: #2c1810; opacity: 1; }
+    .detail-info { padding: 14px 20px 22px; }
+    .detail-info h3 { font-size: 1.3rem; color: #2c1810; margin-bottom: 4px; line-height: 1.25; }
+    .detail-author { font-style: italic; color: #999; font-size: 0.9rem; margin-bottom: 10px; }
+    .detail-short { font-size: 0.92rem; color: #555; margin-bottom: 12px; line-height: 1.5; }
+    .detail-long { font-size: 0.96rem; color: #333; line-height: 1.65; white-space: pre-wrap; margin-bottom: 16px; }
+    .detail-price { margin-bottom: 14px; }
+    .detail-actions { display: flex; flex-direction: column; gap: 8px; }
+    .photo-wrap { position: relative; cursor: pointer; }
+    .photo-count-badge { position: absolute; bottom: 8px; right: 8px; background: rgba(0,0,0,0.6); color: white; font-size: 0.68rem; font-weight: bold; padding: 2px 8px; border-radius: 12px; pointer-events: none; }
     .empty-state { text-align: center; padding: 60px 20px; color: #999; grid-column: 1 / -1; }
     .empty-state .icon { font-size: 3.5rem; margin-bottom: 12px; }
     .empty-state p { font-size: 1rem; }
@@ -195,9 +229,16 @@
       <span class="field-label">AUTOR / DETALLE</span>
       <input id="edit-author" type="text" placeholder="Autor o descripción breve">
     </label>
+    <span class="field-label">FOTOS (de 2 a 5 — la primera es la portada)</span>
+    <div class="gallery-editor" id="edit-gallery"></div>
+    <div class="gallery-hint">La primera foto se muestra en la tarjeta. Las demás aparecen al abrir el artículo.</div>
     <label>
-      <span class="field-label">DESCRIPCIÓN</span>
+      <span class="field-label">DESCRIPCIÓN CORTA (en la tarjeta)</span>
       <textarea id="edit-detail" placeholder="Notas, estado..."></textarea>
+    </label>
+    <label>
+      <span class="field-label">DESCRIPCIÓN LARGA (al abrir la foto)</span>
+      <textarea id="edit-long" placeholder="Detalles, medidas, estado, materiales..."></textarea>
     </label>
     <label>
       <span class="field-label">PRECIO ($)</span>
@@ -223,6 +264,29 @@
     <div class="modal-actions">
       <button class="btn-save" onclick="saveEdit()">Guardar</button>
       <button class="btn-cancel" onclick="closeEdit()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de detalle: galeria de fotos + descripción larga -->
+<div id="detail-modal">
+  <div class="modal-box detail-box" onclick="event.stopPropagation()">
+    <button class="detail-close" onclick="closeDetail()">✕</button>
+    <div class="detail-main" id="detail-main"
+         ontouchstart="galTouchStart(event)" ontouchend="galTouchEnd(event)">
+      <img id="detail-main-img" src="" alt="">
+      <button class="gal-arrow gal-prev" id="gal-prev" onclick="galStep(-1)">‹</button>
+      <button class="gal-arrow gal-next" id="gal-next" onclick="galStep(1)">›</button>
+      <span class="gal-counter" id="gal-counter"></span>
+    </div>
+    <div class="detail-thumbs" id="detail-thumbs"></div>
+    <div class="detail-info">
+      <h3 id="detail-title"></h3>
+      <div class="detail-author" id="detail-author"></div>
+      <div class="detail-short" id="detail-short"></div>
+      <div class="detail-long" id="detail-long"></div>
+      <div class="price-block detail-price" id="detail-price"></div>
+      <div class="detail-actions" id="detail-actions"></div>
     </div>
   </div>
 </div>
@@ -390,9 +454,12 @@
 
     grid.innerHTML = pageBooks.map(book => `
       <div class="book-card ${book.sold ? 'sold' : ''}">
-        ${book.hasPhoto
-          ? `<img class="${isCasa ? 'item-img' : 'book-img'}" src="/api/books/${book.id}/photo?v=${book.photoVersion}" alt="${escHtml(book.title)}" loading="lazy">`
-          : `<div class="${isCasa ? 'item-img-placeholder' : 'book-img-placeholder'}">${isCasa ? '🏠' : '📚'}</div>`}
+        <div class="photo-wrap" onclick="openDetail('${book.id}')">
+          ${book.hasPhoto
+            ? `<img class="${isCasa ? 'item-img' : 'book-img'}" src="/api/books/${book.id}/photo?v=${book.photoVersion}" alt="${escHtml(book.title)}" loading="lazy">`
+            : `<div class="${isCasa ? 'item-img-placeholder' : 'book-img-placeholder'}">${isCasa ? '🏠' : '📚'}</div>`}
+          ${book.photoCount > 1 ? `<span class="photo-count-badge">📷 ${book.photoCount}</span>` : ''}
+        </div>
         <div class="book-info">
           <div class="book-title">${escHtml(book.title)}</div>
           ${book.author ? `<div class="book-author">${escHtml(book.author)}</div>` : ''}
@@ -429,6 +496,10 @@
     const idx = cart.indexOf(id);
     if (idx === -1) cart.push(id); else cart.splice(idx, 1);
     updateCartFloat(); renderBooks();
+    if (detailBookId && document.getElementById('detail-modal').style.display === 'flex') {
+      const b = allBooks.find(x => x.id === detailBookId);
+      if (b) renderDetailActions(b);
+    }
   }
 
   function updateCartFloat() {
@@ -455,6 +526,135 @@
 
   function closeCart() { document.getElementById('cart-modal').style.display = 'none'; }
   document.getElementById('cart-modal').addEventListener('click', function(e) { if (e.target===this) closeCart(); });
+
+  // ---------- Modal de detalle (galeria + descripción larga) ----------
+  let detailBookId = null;
+  let detailGallery = [];   // lista de URLs de fotos
+  let detailIndex = 0;
+
+  function openDetail(id) {
+    const book = allBooks.find(b => b.id === id);
+    if (!book) return;
+    detailBookId = id;
+    const versions = book.galleryVersions || (book.photoVersion ? [book.photoVersion] : []);
+    const count = book.photoCount != null ? book.photoCount : (book.hasPhoto ? 1 : 0);
+    detailGallery = [];
+    for (let i = 0; i < count; i++) {
+      detailGallery.push(`/api/books/${id}/photo/${i}?v=${versions[i] || ''}`);
+    }
+    detailIndex = 0;
+
+    document.getElementById('detail-title').textContent = book.title || '';
+    const authorEl = document.getElementById('detail-author');
+    authorEl.textContent = book.author || '';
+    authorEl.style.display = book.author ? 'block' : 'none';
+    const shortEl = document.getElementById('detail-short');
+    shortEl.textContent = book.detail || '';
+    shortEl.style.display = book.detail ? 'block' : 'none';
+    const longEl = document.getElementById('detail-long');
+    longEl.textContent = book.longDescription || '';
+    longEl.style.display = book.longDescription ? 'block' : 'none';
+
+    renderDetailGallery();
+    renderDetailActions(book);
+    document.getElementById('detail-modal').style.display = 'flex';
+  }
+
+  function renderDetailGallery() {
+    const mainImg = document.getElementById('detail-main-img');
+    const mainBox = document.getElementById('detail-main');
+    const counter = document.getElementById('gal-counter');
+    const prev = document.getElementById('gal-prev');
+    const next = document.getElementById('gal-next');
+    const thumbs = document.getElementById('detail-thumbs');
+    const n = detailGallery.length;
+
+    // Quitamos cualquier placeholder previo
+    const ph = mainBox.querySelector('.detail-placeholder');
+    if (ph) ph.remove();
+
+    if (n === 0) {
+      mainImg.style.display = 'none';
+      if (!mainBox.querySelector('.detail-placeholder')) {
+        const d = document.createElement('div');
+        d.className = 'detail-placeholder';
+        d.textContent = currentSection === 'casa' ? '🏠' : '📚';
+        mainBox.insertBefore(d, prev);
+      }
+      counter.style.display = 'none';
+      prev.style.display = next.style.display = 'none';
+      thumbs.innerHTML = '';
+      return;
+    }
+
+    if (detailIndex >= n) detailIndex = 0;
+    mainImg.style.display = 'block';
+    mainImg.src = detailGallery[detailIndex];
+
+    const multi = n > 1;
+    prev.style.display = next.style.display = multi ? 'flex' : 'none';
+    counter.style.display = multi ? 'block' : 'none';
+    counter.textContent = `${detailIndex + 1} / ${n}`;
+
+    thumbs.innerHTML = multi ? detailGallery.map((src, i) =>
+      `<img class="detail-thumb ${i === detailIndex ? 'active' : ''}" src="${src}" onclick="galGoto(${i})" alt="">`
+    ).join('') : '';
+  }
+
+  function galGoto(i) {
+    if (i < 0 || i >= detailGallery.length) return;
+    detailIndex = i;
+    renderDetailGallery();
+  }
+  function galStep(d) {
+    const n = detailGallery.length;
+    if (n <= 1) return;
+    detailIndex = (detailIndex + d + n) % n;
+    renderDetailGallery();
+  }
+
+  // Swipe en móvil
+  let galTouchX = null;
+  function galTouchStart(e) { galTouchX = e.changedTouches[0].clientX; }
+  function galTouchEnd(e) {
+    if (galTouchX == null) return;
+    const dx = e.changedTouches[0].clientX - galTouchX;
+    if (Math.abs(dx) > 40) galStep(dx < 0 ? 1 : -1);
+    galTouchX = null;
+  }
+
+  function renderDetailActions(book) {
+    const el = document.getElementById('detail-actions');
+    const priceEl = document.getElementById('detail-price');
+    priceEl.innerHTML = book.price != null
+      ? `<span class="price-sale">${formatPrice(book.price)}</span>${book.originalPrice ? `<span class="price-original">${formatPrice(book.originalPrice)}</span><span class="discount-badge">-60%</span>` : ''}`
+      : `<span style="color:#aaa;font-size:0.85rem;font-style:italic">Sin precio aún</span>`;
+
+    let html = '';
+    if (!book.sold && book.price != null) {
+      html += `<button class="btn-cart ${cart.includes(book.id) ? 'in-cart' : ''}" onclick="toggleCart('${book.id}')">
+        ${cart.includes(book.id) ? '✓ Seleccionado' : '🛒 Lo quiero'}
+      </button>`;
+    } else if (book.sold) {
+      html += `<div style="color:#c0392b;font-weight:bold;text-align:center;padding:6px">VENDIDO</div>`;
+    }
+    if (adminMode) {
+      html += `<button class="btn-edit" style="padding:8px;border-radius:6px;border:none;background:#27ae60;color:white;font-weight:bold;cursor:pointer" onclick="closeDetail();editBook('${book.id}')">✏️ Editar</button>`;
+    }
+    el.innerHTML = html;
+  }
+
+  function closeDetail() {
+    document.getElementById('detail-modal').style.display = 'none';
+    detailBookId = null;
+  }
+  document.getElementById('detail-modal').addEventListener('click', function(e) { if (e.target===this) closeDetail(); });
+  document.addEventListener('keydown', function(e) {
+    if (document.getElementById('detail-modal').style.display !== 'flex') return;
+    if (e.key === 'Escape') closeDetail();
+    else if (e.key === 'ArrowLeft') galStep(-1);
+    else if (e.key === 'ArrowRight') galStep(1);
+  });
 
   function buildMessage() {
     const items = cart.map(id => allBooks.find(b => b.id === id)).filter(Boolean);
@@ -525,6 +725,45 @@
 
   let editingId = null;
   let editCategories = ['novelas_judias'];
+  let editGallery = []; // data URLs base64 — [0] es la portada
+
+  // Input oculto para agregar fotos a la galeria en el modal de edicion
+  const galleryInput = document.createElement('input');
+  galleryInput.type = 'file'; galleryInput.accept = 'image/*'; galleryInput.multiple = true;
+  document.body.appendChild(galleryInput);
+
+  const MAX_PHOTOS = 5;
+
+  function renderEditGallery() {
+    const box = document.getElementById('edit-gallery');
+    let html = editGallery.map((src, i) => `
+      <div class="gphoto">
+        <img src="${src}" alt="">
+        ${i === 0 ? '<span class="cover-tag">Portada</span>' : ''}
+        <button type="button" class="gremove" onclick="removeEditPhoto(${i})">✕</button>
+      </div>
+    `).join('');
+    if (editGallery.length < MAX_PHOTOS) {
+      html += `<button type="button" class="gadd" onclick="galleryInput.click()">＋</button>`;
+    }
+    box.innerHTML = html;
+  }
+
+  function removeEditPhoto(i) {
+    editGallery.splice(i, 1);
+    renderEditGallery();
+  }
+
+  galleryInput.onchange = async () => {
+    const files = Array.from(galleryInput.files || []);
+    for (const file of files) {
+      if (editGallery.length >= MAX_PHOTOS) break;
+      const dataUrl = await compressImage(file);
+      editGallery.push(dataUrl);
+    }
+    renderEditGallery();
+    galleryInput.value = '';
+  };
 
   function toggleEditCategory(cat) {
     const idx = editCategories.indexOf(cat);
@@ -544,33 +783,54 @@
 
   document.getElementById('edit-modal').addEventListener('click', function(e) { if (e.target===this) closeEdit(); });
 
-  function editBook(id) {
-    const book = allBooks.find(b => b.id === id);
-    if (!book) return;
+  async function editBook(id) {
+    const listBook = allBooks.find(b => b.id === id);
+    if (!listBook) return;
     editingId = id;
+    // Cargamos el item completo (con las fotos en base64) para poder editarlas.
+    let book = listBook;
+    editGallery = [];
+    try {
+      const res = await fetch(`/api/books/${id}/full`, { headers: { 'X-Admin-Password': adminPassword } });
+      if (res.status === 403) { alert('Contraseña incorrecta'); return; }
+      if (res.ok) {
+        book = await res.json();
+        if (book.photo) editGallery.push(book.photo);
+        (book.photos || []).forEach(p => { if (p) editGallery.push(p); });
+      }
+    } catch (e) { /* si falla, editamos sin tocar fotos */ }
+
     document.getElementById('edit-title').value  = book.title  || '';
     document.getElementById('edit-author').value = book.author || '';
     document.getElementById('edit-detail').value = book.detail || '';
+    document.getElementById('edit-long').value   = book.longDescription || '';
     document.getElementById('edit-price').value  = book.price != null ? book.price : '';
     setEditCategories(bookCategories(book));
+    renderEditGallery();
     document.getElementById('edit-modal').style.display = 'flex';
     document.getElementById('edit-title').focus();
   }
 
-  function closeEdit() { document.getElementById('edit-modal').style.display = 'none'; editingId = null; }
+  function closeEdit() { document.getElementById('edit-modal').style.display = 'none'; editingId = null; editGallery = []; }
 
   async function saveEdit() {
     if (!editingId) return;
     const title  = document.getElementById('edit-title').value.trim();
     const author = document.getElementById('edit-author').value.trim();
     const detail = document.getElementById('edit-detail').value.trim();
+    const longDescription = document.getElementById('edit-long').value.trim();
     const price  = parseFloat(document.getElementById('edit-price').value);
     if (!title) { alert('El nombre no puede estar vacío'); return; }
     if (isNaN(price) || price < 0) { alert('Ingresa un precio válido'); return; }
     const res = await fetch(`/api/books/${editingId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json', 'X-Admin-Password': adminPassword },
-      body: JSON.stringify({ title, author, detail, price, categories: editCategories })
+      body: JSON.stringify({
+        title, author, detail, longDescription, price,
+        categories: editCategories,
+        photo: editGallery[0] || '',
+        photos: editGallery.slice(1)
+      })
     });
     if (res.status === 403) { alert('Contraseña incorrecta'); return; }
     closeEdit(); await loadBooks();

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Agregar Libro</title>
+  <title>Agregar artículo</title>
   <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#2c1810">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -90,6 +90,33 @@
     .photo-placeholder p { font-size: 0.9rem; line-height: 1.4; }
 
     #photo-input { display: none; }
+
+    /* --- Galeria de fotos (2 a 5) --- */
+    .gallery-editor { display: flex; flex-wrap: wrap; gap: 10px; }
+    .gallery-editor .gphoto { position: relative; width: 90px; height: 90px; border-radius: 10px; overflow: hidden; border: 1px solid #ddd; background: #f5ead8; }
+    .gallery-editor .gphoto img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .gallery-editor .gphoto .cover-tag { position: absolute; bottom: 0; left: 0; right: 0; background: rgba(44,24,16,0.8); color: #fdf6ec; font-size: 0.6rem; font-weight: bold; text-align: center; padding: 2px 0; }
+    .gallery-editor .gphoto .gremove { position: absolute; top: 3px; right: 3px; width: 22px; height: 22px; border: none; border-radius: 50%; background: rgba(0,0,0,0.65); color: white; font-size: 0.85rem; cursor: pointer; line-height: 1; display: flex; align-items: center; justify-content: center; padding: 0; }
+    .gallery-editor .gadd { width: 90px; height: 90px; border: 2px dashed #c9a87c; border-radius: 10px; background: #fdf6ec; color: #a08060; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
+    .gallery-editor .gadd:hover { border-color: #8b4513; }
+    .gallery-editor .gadd .plus { font-size: 1.8rem; line-height: 1; }
+    .gallery-editor .gadd .lbl { font-size: 0.62rem; }
+    .gallery-hint { font-size: 0.78rem; color: #999; margin-top: 10px; line-height: 1.4; }
+
+    .field textarea {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1.5px solid #ddd;
+      border-radius: 10px;
+      font-size: 1rem;
+      outline: none;
+      transition: border-color 0.2s;
+      background: white;
+      font-family: inherit;
+      resize: vertical;
+      min-height: 80px;
+    }
+    .field textarea:focus { border-color: #8b4513; }
 
     /* --- Busqueda --- */
     .section-title {
@@ -369,19 +396,15 @@
 
 <header>
   <a href="/">←</a>
-  <h1>Agregar libro</h1>
+  <h1>Agregar artículo</h1>
 </header>
 
-<!-- Foto -->
+<!-- Fotos -->
 <div class="card">
-  <div class="section-title">Foto del libro</div>
-  <div class="photo-area" id="photo-area" onclick="document.getElementById('photo-input').click()">
-    <div class="photo-placeholder">
-      <div class="icon">📷</div>
-      <p>Toca para sacar foto<br>o elegir de la galeria</p>
-    </div>
-  </div>
-  <input type="file" id="photo-input" accept="image/*" capture="environment" onchange="previewPhoto(this)">
+  <div class="section-title">Fotos (de 2 a 5)</div>
+  <div class="gallery-editor" id="gallery-editor"></div>
+  <input type="file" id="photo-input" accept="image/*" multiple onchange="addPhotos(this)">
+  <div class="gallery-hint">La primera foto es la portada (se ve en la tarjeta). Las demás aparecen al abrir el artículo.</div>
 </div>
 
 <!-- Busqueda automatica -->
@@ -397,16 +420,26 @@
 
 <!-- Datos del libro -->
 <div class="card">
-  <div class="section-title">Datos del libro</div>
+  <div class="section-title">Datos del artículo</div>
 
   <div class="field">
-    <label>Titulo *</label>
-    <input type="text" id="title" placeholder="Nombre del libro">
+    <label>Nombre / Título *</label>
+    <input type="text" id="title" placeholder="Nombre del artículo">
   </div>
 
   <div class="field">
     <label>Autor</label>
     <input type="text" id="author" placeholder="Nombre del autor">
+  </div>
+
+  <div class="field">
+    <label>Descripción corta (en la tarjeta)</label>
+    <input type="text" id="short-desc" placeholder="Ej: Set de 4 tazas, casi nuevo">
+  </div>
+
+  <div class="field">
+    <label>Descripción larga (al abrir la foto)</label>
+    <textarea id="long-desc" placeholder="Detalles, medidas, estado, materiales..."></textarea>
   </div>
 
   <div class="divider"></div>
@@ -448,7 +481,7 @@
 
 <!-- Guardar -->
 <div style="padding: 0 16px;">
-  <button class="btn-save" id="btn-save" onclick="saveBook()">Guardar libro</button>
+  <button class="btn-save" id="btn-save" onclick="saveBook()">Guardar artículo</button>
 </div>
 
 <div id="toast"></div>
@@ -486,10 +519,34 @@
   // Focus automatico en el campo de contrasena
   window.addEventListener('load', () => {
     document.getElementById('login-pw').focus();
+    renderGallery();
   });
 
-  let photoBase64 = null; // data URI comprimida
+  let galleryPhotos = []; // data URIs comprimidas — [0] es la portada
   let selectedCategories = ['novelas_judias'];
+  const MAX_PHOTOS = 5;
+
+  function renderGallery() {
+    const box = document.getElementById('gallery-editor');
+    let html = galleryPhotos.map((src, i) => `
+      <div class="gphoto">
+        <img src="${src}" alt="">
+        ${i === 0 ? '<span class="cover-tag">Portada</span>' : ''}
+        <button type="button" class="gremove" onclick="removePhoto(${i})">✕</button>
+      </div>
+    `).join('');
+    if (galleryPhotos.length < MAX_PHOTOS) {
+      html += `<button type="button" class="gadd" onclick="document.getElementById('photo-input').click()">
+        <span class="plus">＋</span><span class="lbl">Agregar</span>
+      </button>`;
+    }
+    box.innerHTML = html;
+  }
+
+  function removePhoto(i) {
+    galleryPhotos.splice(i, 1);
+    renderGallery();
+  }
 
   function toggleCategory(cat) {
     const idx = selectedCategories.indexOf(cat);
@@ -525,23 +582,16 @@
     });
   }
 
-  async function previewPhoto(input) {
-    const file = input.files[0];
-    if (!file) return;
-
-    const area = document.getElementById('photo-area');
-    area.innerHTML = `<div class="photo-placeholder"><div class="icon"><span class="spinner" style="border-color:rgba(160,128,96,.4);border-top-color:#a08060;width:32px;height:32px"></span></div></div>`;
-
-    photoBase64 = await compressImage(file);
-
-    area.innerHTML = `
-      <img src="${photoBase64}" alt="preview">
-      <div class="overlay">
-        <span style="font-size:1.5rem">📷</span>
-        <span>Cambiar foto</span>
-      </div>
-    `;
-    area.onclick = () => document.getElementById('photo-input').click();
+  async function addPhotos(input) {
+    const files = Array.from(input.files || []);
+    if (!files.length) return;
+    for (const file of files) {
+      if (galleryPhotos.length >= MAX_PHOTOS) break;
+      const dataUrl = await compressImage(file);
+      galleryPhotos.push(dataUrl);
+      renderGallery();
+    }
+    input.value = '';
   }
 
   async function searchBook() {
@@ -597,20 +647,15 @@
   function resetForm() {
     document.getElementById('title').value = '';
     document.getElementById('author').value = '';
+    document.getElementById('short-desc').value = '';
+    document.getElementById('long-desc').value = '';
     document.getElementById('original-price').value = '';
     document.getElementById('sale-price').value = '';
     document.getElementById('search-input').value = '';
     document.getElementById('lookup-result').style.display = 'none';
     document.getElementById('photo-input').value = '';
-    const area = document.getElementById('photo-area');
-    area.innerHTML = `
-      <div class="photo-placeholder">
-        <div class="icon">📷</div>
-        <p>Toca para sacar foto<br>o elegir de la galeria</p>
-      </div>
-    `;
-    area.onclick = () => document.getElementById('photo-input').click();
-    photoBase64 = null;
+    galleryPhotos = [];
+    renderGallery();
     selectedCategories = ['novelas_judias'];
     document.querySelectorAll('#cat-row .cat-btn, #cat-row-casa .cat-btn').forEach(b => {
       b.classList.toggle('active', b.dataset.cat === 'novelas_judias');
@@ -620,10 +665,12 @@
   async function saveBook() {
     const title = document.getElementById('title').value.trim();
     const author = document.getElementById('author').value.trim();
+    const detail = document.getElementById('short-desc').value.trim();
+    const longDescription = document.getElementById('long-desc').value.trim();
     const originalPrice = document.getElementById('original-price').value;
     const price = document.getElementById('sale-price').value;
 
-    if (!title) { showToast('Escribe el titulo del libro', true); return; }
+    if (!title) { showToast('Escribe el nombre del artículo', true); return; }
     if (!price)  { showToast('Ingresa el precio de venta', true); return; }
 
     const btn = document.getElementById('btn-save');
@@ -637,9 +684,12 @@
         body: JSON.stringify({
           title,
           author,
+          detail,
+          longDescription,
           originalPrice: originalPrice || null,
           price,
-          photo: photoBase64 || null,
+          photo: galleryPhotos[0] || null,
+          photos: galleryPhotos.slice(1),
           categories: selectedCategories
         })
       });
@@ -652,7 +702,7 @@
         return;
       }
       if (data.success) {
-        showToast('Libro guardado!');
+        showToast('Artículo guardado!');
         setTimeout(resetForm, 1200);
       } else {
         showToast('Error al guardar', true);
@@ -662,7 +712,7 @@
     }
 
     btn.disabled = false;
-    btn.textContent = 'Guardar libro';
+    btn.textContent = 'Guardar artículo';
   }
 
   function showToast(msg, isError = false) {
