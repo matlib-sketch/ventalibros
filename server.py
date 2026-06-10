@@ -179,6 +179,23 @@ def init_db():
                     "INSERT INTO schema_migrations (version, applied_at) VALUES (7, %s)",
                     (datetime.datetime.utcnow().isoformat(),)
                 )
+
+            # Migracion 8: ajustamos el precio de venta de los articulos de la
+            # seccion Casa para que sea un 40% de descuento sobre el precio
+            # internet de referencia (price = original_price * 0.60). Tomamos el
+            # valor ya redondeado de CASA_SEED. Idempotente por id.
+            cur.execute("SELECT 1 FROM schema_migrations WHERE version = 8")
+            if not cur.fetchone():
+                import datetime
+                for it in CASA_SEED:
+                    cur.execute(
+                        "UPDATE books SET price = %s WHERE id = %s",
+                        (it['price'], it['id'])
+                    )
+                cur.execute(
+                    "INSERT INTO schema_migrations (version, applied_at) VALUES (8, %s)",
+                    (datetime.datetime.utcnow().isoformat(),)
+                )
         conn.commit()
 
 # Categorias permitidas. Cualquier otra cosa se guarda como 'novelas_judias'.
@@ -202,7 +219,7 @@ CASA_SEED = [
         'id': 'casa-refrigerador-samsung-617',
         'title': 'Refrigerador Samsung Side by Side 617L',
         'detail': '617 L · Side by Side · No Frost · Inverter · color Silver. Como nuevo (sept. 2020).',
-        'price': 350000,
+        'price': 567000,
         # Precio nuevo hoy en internet: $790.000 – $1.100.000 (punto medio).
         'original_price': 945000,
         'category': 'cocina',
@@ -220,7 +237,7 @@ CASA_SEED = [
 
             Ideal para familias o quienes necesitan harta capacidad. Funciona como nuevo, solo lo vendo por cambio de casa.
 
-            💲 Precio: $350.000 (conversable)
+            💲 Precio: $567.000 (conversable)
             📍 Retiro en Santiago. El comprador coordina el traslado.
             📸 Fotos reales del equipo funcionando.'''),
     },
@@ -228,7 +245,7 @@ CASA_SEED = [
         'id': 'casa-microondas-somela-reflection-3000',
         'title': 'Microondas Grill Somela Reflection 3000 DGM',
         'detail': '30 L · grill 2 en 1 · puerta espejada. Impecable (jul. 2021).',
-        'price': 45000,
+        'price': 68990,
         # Precio nuevo hoy en internet: $99.990 – $129.990 (punto medio).
         'original_price': 114990,
         'category': 'cocina',
@@ -246,7 +263,7 @@ CASA_SEED = [
 
             Anda como nuevo (nuevo cuesta sobre $100.000). Solo lo vendo por cambio de casa.
 
-            💲 Precio: $45.000 (conversable)
+            💲 Precio: $68.990 (conversable)
             📍 Retiro en Santiago.
             📸 Fotos reales del equipo.'''),
     },
@@ -254,7 +271,7 @@ CASA_SEED = [
         'id': 'casa-microondas-samsung-me83',
         'title': 'Microondas Samsung ME83 — 23 L',
         'detail': '23 L · 700W · puerta espejada. Compacto, ideal depto. 3 años de uso.',
-        'price': 32000,
+        'price': 43500,
         # Precio nuevo hoy en internet: $60.000 – $85.000 (punto medio).
         'original_price': 72500,
         'category': 'cocina',
@@ -272,7 +289,7 @@ CASA_SEED = [
 
             Anda como nuevo. Solo lo vendo por cambio de casa.
 
-            💲 Precio: $32.000 (conversable)
+            💲 Precio: $43.500 (conversable)
             📍 Retiro en Santiago.
             📸 Fotos reales del equipo.'''),
     },
@@ -280,7 +297,7 @@ CASA_SEED = [
         'id': 'casa-lavavajillas-fensa-9430',
         'title': 'Lavavajillas Fensa Computer 9430 Inox',
         'detail': '14 cubiertos · acero inox · 6 programas. Impecable (jul. 2021).',
-        'price': 140000,
+        'price': 194990,
         # Precio nuevo hoy en internet: $239.990 – $409.990 (punto medio).
         'original_price': 324990,
         'category': 'cocina',
@@ -298,7 +315,7 @@ CASA_SEED = [
 
             Anda como nuevo (nuevo cuesta sobre $280.000). Lo vendo por cambio de casa.
 
-            💲 Precio: $140.000 (conversable)
+            💲 Precio: $194.990 (conversable)
             📍 Retiro en Santiago. Lo entrego desinstalado y listo para llevar.
             📸 Fotos reales del equipo. Te muestro un video funcionando.'''),
     },
@@ -306,7 +323,7 @@ CASA_SEED = [
         'id': 'casa-hidrolavadora-bauker-fast-plus',
         'title': 'Hidrolavadora Bauker Fast Plus 1650 PSI',
         'detail': 'Alta presión 1650 PSI · 1400W · con todos los accesorios. Poco uso (1 año).',
-        'price': 30000,
+        'price': 36000,
         # Precio nuevo hoy en internet: $45.000 – $75.000 (punto medio).
         'original_price': 60000,
         'category': 'herramientas',
@@ -323,7 +340,7 @@ CASA_SEED = [
 
             Como nueva cuesta sobre $50.000. La vendo por cambio de casa.
 
-            💲 Precio: $30.000 (conversable)
+            💲 Precio: $36.000 (conversable)
             📍 Retiro en Santiago.
             📸 Fotos reales del equipo.'''),
     },
@@ -331,7 +348,7 @@ CASA_SEED = [
         'id': 'casa-generador-powerpro-xt35ig',
         'title': 'Generador Inverter PowerPro XT35iG 3.5 KVA',
         'detail': 'Inverter 3.5 KVA gasolina · onda pura · solo 4 hrs de uso. Casi nuevo.',
-        'price': 290000,
+        'price': 279000,
         # Precio nuevo hoy en internet: $436.000 – $495.490 (punto medio).
         'original_price': 465000,
         'category': 'herramientas',
@@ -350,7 +367,7 @@ CASA_SEED = [
 
             Nuevo cuesta sobre $436.000. Lo vendo por cambio de casa.
 
-            💲 Precio: $290.000 (conversable)
+            💲 Precio: $279.000 (conversable)
             📍 Retiro en Santiago. Te lo muestro funcionando antes de comprar.
             📸 Fotos reales del equipo.'''),
     },
