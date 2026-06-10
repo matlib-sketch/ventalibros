@@ -179,10 +179,10 @@
 
 <!-- Selector de sección -->
 <div class="section-switcher">
-  <button class="section-btn active" id="sec-libros" onclick="setSection('libros')">
+  <button class="section-btn" id="sec-libros" onclick="setSection('libros')">
     <span class="sec-icon">📚</span> Libros
   </button>
-  <button class="section-btn" id="sec-casa" onclick="setSection('casa')">
+  <button class="section-btn active" id="sec-casa" onclick="setSection('casa')">
     <span class="sec-icon">🏠</span> Casa
   </button>
 </div>
@@ -323,8 +323,8 @@
   let cart = [];
   const PAGE_SIZE = 20;
   let currentPage = 1;
-  let currentSection = 'libros';
-  let currentCat = 'todos_libros';
+  let currentSection = 'casa';
+  let currentCat = 'todos_casa';
 
   function bookCategories(b) {
     if (Array.isArray(b.categories) && b.categories.length > 0) return b.categories;
