@@ -256,10 +256,11 @@
     </div>
     <div class="cat-section-label">🏠 Casa</div>
     <div class="cat-row" id="edit-cat-casa">
-      <button type="button" class="cat-btn" data-cat="cocina"      onclick="toggleEditCategory('cocina')">Cocina</button>
-      <button type="button" class="cat-btn" data-cat="decoracion"  onclick="toggleEditCategory('decoracion')">Decoración</button>
-      <button type="button" class="cat-btn" data-cat="dormitorio"  onclick="toggleEditCategory('dormitorio')">Dormitorio</button>
-      <button type="button" class="cat-btn" data-cat="bano"        onclick="toggleEditCategory('bano')">Baño</button>
+      <button type="button" class="cat-btn" data-cat="cocina"       onclick="toggleEditCategory('cocina')">Cocina</button>
+      <button type="button" class="cat-btn" data-cat="decoracion"   onclick="toggleEditCategory('decoracion')">Decoración</button>
+      <button type="button" class="cat-btn" data-cat="dormitorio"   onclick="toggleEditCategory('dormitorio')">Dormitorio</button>
+      <button type="button" class="cat-btn" data-cat="bano"         onclick="toggleEditCategory('bano')">Baño</button>
+      <button type="button" class="cat-btn" data-cat="herramientas" onclick="toggleEditCategory('herramientas')">Herramientas</button>
     </div>
     <div class="modal-actions">
       <button class="btn-save" onclick="saveEdit()">Guardar</button>
@@ -307,13 +308,14 @@
     },
     casa: {
       tabs: [
-        { cat: 'todos_casa',  label: 'Todos' },
-        { cat: 'cocina',      label: 'Cocina' },
-        { cat: 'decoracion',  label: 'Decoración' },
-        { cat: 'dormitorio',  label: 'Dormitorio' },
-        { cat: 'bano',        label: 'Baño' },
+        { cat: 'todos_casa',    label: 'Todos' },
+        { cat: 'cocina',        label: 'Cocina' },
+        { cat: 'decoracion',    label: 'Decoración' },
+        { cat: 'dormitorio',    label: 'Dormitorio' },
+        { cat: 'bano',          label: 'Baño' },
+        { cat: 'herramientas',  label: 'Herramientas' },
       ],
-      cats: new Set(['cocina','decoracion','dormitorio','bano']),
+      cats: new Set(['cocina','decoracion','dormitorio','bano','herramientas']),
     },
   };
 
