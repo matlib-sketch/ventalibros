@@ -3,6 +3,7 @@ import json
 import uuid
 import base64
 import hashlib
+import textwrap
 import urllib.request
 import urllib.parse
 from pathlib import Path
@@ -138,6 +139,27 @@ def init_db():
                     "INSERT INTO schema_migrations (version, applied_at) VALUES (5, %s)",
                     (datetime.datetime.utcnow().isoformat(),)
                 )
+
+            # Migracion 6: cargamos los primeros articulos de la seccion Casa
+            # (electrodomesticos + herramientas), sin fotos. Las fotos se agregan
+            # despues desde el panel de edicion. Idempotente por id (slug fijo).
+            cur.execute("SELECT 1 FROM schema_migrations WHERE version = 6")
+            if not cur.fetchone():
+                import datetime
+                now = datetime.datetime.utcnow().isoformat()
+                for it in CASA_SEED:
+                    cur.execute("""
+                        INSERT INTO books
+                            (id, title, author, detail, long_description, original_price,
+                             price, photo, photos, sold, created_at, category, categories)
+                        VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                        ON CONFLICT (id) DO NOTHING
+                    """, (it['id'], it['title'], '', it['detail'], it['long'], None,
+                          it['price'], None, [], False, now, it['category'], [it['category']]))
+                cur.execute(
+                    "INSERT INTO schema_migrations (version, applied_at) VALUES (6, %s)",
+                    (now,)
+                )
         conn.commit()
 
 # Categorias permitidas. Cualquier otra cosa se guarda como 'novelas_judias'.
@@ -145,13 +167,163 @@ VALID_CATEGORIES = {
     # libros
     'hebreo', 'ingles_espanol', 'novelas_judias', 'seculares', 'ninos', 'mujeres',
     # casa
-    'cocina', 'decoracion', 'dormitorio', 'bano',
+    'cocina', 'decoracion', 'dormitorio', 'bano', 'herramientas',
 }
 
 SECTION_CATEGORIES = {
     'libros': {'hebreo', 'ingles_espanol', 'novelas_judias', 'seculares', 'ninos', 'mujeres'},
-    'casa':   {'cocina', 'decoracion', 'dormitorio', 'bano'},
+    'casa':   {'cocina', 'decoracion', 'dormitorio', 'bano', 'herramientas'},
 }
+
+# Carga inicial de la sección Casa (migración 6). Cada item entra sin fotos:
+# las fotos se agregan después desde el panel de edición. El id es un slug fijo
+# para que la migración sea idempotente (ON CONFLICT DO NOTHING).
+CASA_SEED = [
+    {
+        'id': 'casa-refrigerador-samsung-617',
+        'title': 'Refrigerador Samsung Side by Side 617L',
+        'detail': '617 L · Side by Side · No Frost · Inverter · color Silver. Como nuevo (sept. 2020).',
+        'price': 350000,
+        'category': 'cocina',
+        'long': textwrap.dedent('''\
+            Refrigerador Samsung Side by Side 617 Litros — RS65R5411M9/ZS (SpaceMax)
+
+            Vendo refrigerador Samsung Side by Side de 617 litros, color Silver. Comprado en septiembre de 2020, en excelente estado y funcionando perfecto.
+
+            ✅ Dispensador de agua y hielo funcionando perfecto y limpios
+            ✅ Tecnología SpaceMax (más capacidad interior)
+            ✅ Sistema No Frost (no se forma escarcha)
+            ✅ Compresor Digital Inverter (bajo consumo y silencioso)
+            ✅ 617 litros totales — 415 L refrigerador / 202 L congelador
+            ✅ Enfría parejo, sin ruidos, muy bien mantenido y limpio
+
+            Ideal para familias o quienes necesitan harta capacidad. Funciona como nuevo, solo lo vendo por cambio de casa.
+
+            💲 Precio: $350.000 (conversable)
+            📍 Retiro en Santiago. El comprador coordina el traslado.
+            📸 Fotos reales del equipo funcionando.'''),
+    },
+    {
+        'id': 'casa-microondas-somela-reflection-3000',
+        'title': 'Microondas Grill Somela Reflection 3000 DGM',
+        'detail': '30 L · grill 2 en 1 · puerta espejada. Impecable (jul. 2021).',
+        'price': 45000,
+        'category': 'cocina',
+        'long': textwrap.dedent('''\
+            Microondas Grill Somela Reflection 3000 DGM — 30 Litros
+
+            Vendo microondas grill Somela Reflection 3000 DGM, 30 litros, puerta espejada. Comprado en julio de 2021, funcionando perfecto y muy bien cuidado.
+
+            ✅ Funciona perfecto (microondas 1400W + grill 1100W)
+            ✅ 2 en 1: microondas + grill para dorar y gratinar
+            ✅ Incluye rejilla metálica del grill y bandeja de vidrio giratoria
+            ✅ Limpio por dentro y por fuera, sin manchas ni rayas
+            ✅ Panel digital, encendido automático y bloqueo de seguridad para niños
+            ✅ 30 litros — espacio para fuentes grandes
+
+            Anda como nuevo (nuevo cuesta sobre $100.000). Solo lo vendo por cambio de casa.
+
+            💲 Precio: $45.000 (conversable)
+            📍 Retiro en Santiago.
+            📸 Fotos reales del equipo.'''),
+    },
+    {
+        'id': 'casa-microondas-samsung-me83',
+        'title': 'Microondas Samsung ME83 — 23 L',
+        'detail': '23 L · 700W · puerta espejada. Compacto, ideal depto. 3 años de uso.',
+        'price': 32000,
+        'category': 'cocina',
+        'long': textwrap.dedent('''\
+            Microondas Samsung ME83 — 23 Litros
+
+            Vendo microondas Samsung ME83, 23 litros, 700W, puerta espejada. Tiene 3 años de uso, funcionando perfecto y muy bien cuidado.
+
+            ✅ Funciona perfecto, calienta parejo
+            ✅ Interior de esmalte cerámico (fácil de limpiar, antibacterial)
+            ✅ Incluye bandeja de vidrio giratoria
+            ✅ Limpio por dentro y por fuera
+            ✅ Diseño espejado, compacto — ideal para cocinas chicas, departamentos o pieza
+            ✅ 23 litros, 6 niveles de potencia
+
+            Anda como nuevo. Solo lo vendo por cambio de casa.
+
+            💲 Precio: $32.000 (conversable)
+            📍 Retiro en Santiago.
+            📸 Fotos reales del equipo.'''),
+    },
+    {
+        'id': 'casa-lavavajillas-fensa-9430',
+        'title': 'Lavavajillas Fensa Computer 9430 Inox',
+        'detail': '14 cubiertos · acero inox · 6 programas. Impecable (jul. 2021).',
+        'price': 140000,
+        'category': 'cocina',
+        'long': textwrap.dedent('''\
+            Lavavajillas Fensa Computer 9430 Inox — 14 Cubiertos
+
+            Vendo lavavajillas Fensa Computer 9430, frontal en acero inoxidable, 14 cubiertos. Instalado en julio de 2021, impecable y funcionando perfecto.
+
+            ✅ Funciona perfecto: lava y seca sin problemas, sin fugas
+            ✅ 14 cubiertos — capacidad grande para toda la familia
+            ✅ 6 programas de lavado + panel digital
+            ✅ Tercera bandeja exclusiva para cubiertos (más espacio para vajilla)
+            ✅ Frontal e interior en acero inoxidable
+            ✅ Impecable por dentro y por fuera, con todos los canastos y bandejas
+
+            Anda como nuevo (nuevo cuesta sobre $280.000). Lo vendo por cambio de casa.
+
+            💲 Precio: $140.000 (conversable)
+            📍 Retiro en Santiago. Lo entrego desinstalado y listo para llevar.
+            📸 Fotos reales del equipo. Te muestro un video funcionando.'''),
+    },
+    {
+        'id': 'casa-hidrolavadora-bauker-fast-plus',
+        'title': 'Hidrolavadora Bauker Fast Plus 1650 PSI',
+        'detail': 'Alta presión 1650 PSI · 1400W · con todos los accesorios. Poco uso (1 año).',
+        'price': 30000,
+        'category': 'herramientas',
+        'long': textwrap.dedent('''\
+            Hidrolavadora Bauker Fast Plus — Alta Presión 1650 PSI
+
+            Vendo hidrolavadora eléctrica Bauker Fast Plus, alta presión (1650 PSI / ~113 bar), 1400W. Tiene solo 1 año de uso, funciona perfecto y viene con todos sus accesorios.
+
+            ✅ Funciona perfecto, toma presión sin problemas
+            ✅ Incluye todo: pistola, lanza, manguera de 4 m, boquillas y conector de agua
+            ✅ Ideal para lavar auto, patio, rejas, terrazas y muros
+            ✅ Compacta y liviana, fácil de guardar
+            ✅ Muy poco uso, en excelente estado
+
+            Como nueva cuesta sobre $50.000. La vendo por cambio de casa.
+
+            💲 Precio: $30.000 (conversable)
+            📍 Retiro en Santiago.
+            📸 Fotos reales del equipo.'''),
+    },
+    {
+        'id': 'casa-generador-powerpro-xt35ig',
+        'title': 'Generador Inverter PowerPro XT35iG 3.5 KVA',
+        'detail': 'Inverter 3.5 KVA gasolina · onda pura · solo 4 hrs de uso. Casi nuevo.',
+        'price': 290000,
+        'category': 'herramientas',
+        'long': textwrap.dedent('''\
+            Generador Inverter PowerPro XT35iG — 3.5 KVA Gasolina
+
+            Vendo generador eléctrico inverter PowerPro XT35iG, a gasolina, 3.5 KVA (3.200W continuos / 3.500W peak). Tiene 4 años pero solo 4 horas de uso reales — está prácticamente nuevo y parte muy fácil.
+
+            ✅ Solo 4 horas de uso (lo muestra la pantalla digital de horas)
+            ✅ Parte a la primera, sin problemas
+            ✅ Tecnología inverter / onda pura — seguro para notebook, TV, refrigerador y electrónica sensible
+            ✅ Motor 4 tiempos 212cc, estanque 7 L, autonomía 3–4 hrs
+            ✅ Salidas 220V + puertos USB, partida manual
+            ✅ Ideal como respaldo para casa, parcela, taller o eventos
+            ✅ Certificación SEC, conservado impecable
+
+            Nuevo cuesta sobre $436.000. Lo vendo por cambio de casa.
+
+            💲 Precio: $290.000 (conversable)
+            📍 Retiro en Santiago. Te lo muestro funcionando antes de comprar.
+            📸 Fotos reales del equipo.'''),
+    },
+]
 
 def _section_of(cat):
     for section, cats in SECTION_CATEGORIES.items():
