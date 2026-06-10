@@ -47,6 +47,11 @@ def init_db():
             cur.execute("ALTER TABLE books ALTER COLUMN price DROP NOT NULL")
             cur.execute("ALTER TABLE books ADD COLUMN IF NOT EXISTS category TEXT DEFAULT 'novelas_judias'")
             cur.execute("ALTER TABLE books ADD COLUMN IF NOT EXISTS categories TEXT[] DEFAULT '{}'")
+            # Descripcion larga (se muestra al abrir la foto) y fotos extra de la galeria.
+            # 'photo' sigue siendo la foto de portada/presentacion; 'photos' son las
+            # fotos adicionales. La galeria completa es [photo, *photos] (hasta 5).
+            cur.execute("ALTER TABLE books ADD COLUMN IF NOT EXISTS long_description TEXT DEFAULT ''")
+            cur.execute("ALTER TABLE books ADD COLUMN IF NOT EXISTS photos TEXT[] DEFAULT '{}'")
 
             # Registro de migraciones aplicadas (para no repetirlas en cada arranque).
             cur.execute("""
@@ -183,17 +188,19 @@ def read_books():
             return _clean_categories(raw)
 
         return [{
-            'id':            r['id'],
-            'title':         r['title'],
-            'author':        r['author'] or '',
-            'detail':        r['detail'] or '',
-            'originalPrice': r['original_price'],
-            'price':         r['price'],
-            'photo':         r['photo'],
-            'sold':          r['sold'],
-            'createdAt':     r['created_at'],
-            'category':      _row_cats(r)[0],
-            'categories':    _row_cats(r),
+            'id':              r['id'],
+            'title':           r['title'],
+            'author':          r['author'] or '',
+            'detail':          r['detail'] or '',
+            'longDescription': r.get('long_description') or '',
+            'originalPrice':   r['original_price'],
+            'price':           r['price'],
+            'photo':           r['photo'],
+            'photos':          list(r.get('photos') or []),
+            'sold':            r['sold'],
+            'createdAt':       r['created_at'],
+            'category':        _row_cats(r)[0],
+            'categories':      _row_cats(r),
         } for r in rows]
     else:
         data_file = BASE_DIR / 'data' / 'books.json'
@@ -206,20 +213,24 @@ def read_books():
                 cats = _clean_categories(b.get('categories') or ([b.get('category')] if b.get('category') else []))
                 b['category'] = cats[0]
                 b['categories'] = cats
+                b['longDescription'] = b.get('longDescription') or ''
+                b['photos'] = b.get('photos') or []
             return books
         except Exception:
             return []
 
 def save_book_db(book):
     cats = _clean_categories(book.get('categories') or ([book.get('category')] if book.get('category') else []))
+    photos = [p for p in (book.get('photos') or []) if p][:4]
     with get_conn() as conn:
         with conn.cursor() as cur:
             cur.execute("""
-                INSERT INTO books (id, title, author, detail, original_price, price, photo, sold, created_at, category, categories)
-                VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                INSERT INTO books (id, title, author, detail, long_description, original_price, price, photo, photos, sold, created_at, category, categories)
+                VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
             """, (book['id'], book['title'], book['author'], book.get('detail', ''),
+                  book.get('longDescription', ''),
                   book['originalPrice'], book['price'],
-                  book['photo'], book['sold'], book['createdAt'],
+                  book['photo'], photos, book['sold'], book['createdAt'],
                   cats[0], cats))
         conn.commit()
 
@@ -229,7 +240,8 @@ def delete_book_db(book_id):
             cur.execute("DELETE FROM books WHERE id=%s", (book_id,))
         conn.commit()
 
-def patch_book_db(book_id, sold=None, price=None, photo=None, title=None, author=None, detail=None, category=None):
+def patch_book_db(book_id, sold=None, price=None, photo=None, title=None, author=None,
+                  detail=None, category=None, long_description=None, photos=None):
     with get_conn() as conn:
         with conn.cursor() as cur:
             if sold is not None:
@@ -238,12 +250,17 @@ def patch_book_db(book_id, sold=None, price=None, photo=None, title=None, author
                 cur.execute("UPDATE books SET price=%s WHERE id=%s", (price, book_id))
             if photo is not None:
                 cur.execute("UPDATE books SET photo=%s WHERE id=%s", (photo, book_id))
+            if photos is not None:
+                clean = [p for p in photos if isinstance(p, str) and p][:4]
+                cur.execute("UPDATE books SET photos=%s WHERE id=%s", (clean, book_id))
             if title is not None:
                 cur.execute("UPDATE books SET title=%s WHERE id=%s", (title, book_id))
             if author is not None:
                 cur.execute("UPDATE books SET author=%s WHERE id=%s", (author, book_id))
             if detail is not None:
                 cur.execute("UPDATE books SET detail=%s WHERE id=%s", (detail, book_id))
+            if long_description is not None:
+                cur.execute("UPDATE books SET long_description=%s WHERE id=%s", (long_description, book_id))
             if category is not None:
                 cats = _clean_categories(category if isinstance(category, list) else [category])
                 cur.execute("UPDATE books SET category=%s, categories=%s WHERE id=%s", (cats[0], cats, book_id))
@@ -298,31 +315,46 @@ def _photo_version(photo):
         return None
     return hashlib.md5(photo[:300].encode('utf-8', errors='ignore')).hexdigest()[:8]
 
+def _gallery_of(b):
+    """Galeria completa de un item: portada + fotos extra, sin vacios."""
+    gallery = [b.get('photo')] + list(b.get('photos') or [])
+    return [p for p in gallery if p]
+
 def _strip_photo(b):
-    """Saca la foto del libro, deja solo flags livianos."""
-    out = {k: v for k, v in b.items() if k != 'photo'}
-    out['hasPhoto'] = bool(b.get('photo'))
-    out['photoVersion'] = _photo_version(b.get('photo'))
+    """Saca las fotos pesadas del item, deja solo flags livianos.
+
+    El listado no manda el base64: cada foto se pide aparte por
+    /api/books/<id>/photo/<idx>. Mandamos la cuenta y las versiones para
+    saber cuantas fotos hay y poder invalidar la cache de cada una.
+    """
+    gallery = _gallery_of(b)
+    out = {k: v for k, v in b.items() if k not in ('photo', 'photos')}
+    out['hasPhoto'] = len(gallery) > 0
+    out['photoCount'] = len(gallery)
+    out['galleryVersions'] = [_photo_version(p) for p in gallery]
+    out['photoVersion'] = out['galleryVersions'][0] if gallery else None
     return out
 
-def _get_book_photo(book_id):
-    """Devuelve solo el data URL de la foto. Usado por /api/books/<id>/photo."""
+def _get_book_gallery(book_id):
+    """Devuelve la lista de data URLs (portada + extras) de un item."""
     if DATABASE_URL:
         with get_conn() as conn:
             with conn.cursor() as cur:
-                cur.execute("SELECT photo FROM books WHERE id=%s", (book_id,))
+                cur.execute("SELECT photo, photos FROM books WHERE id=%s", (book_id,))
                 row = cur.fetchone()
-        return row[0] if row else None
+        if not row:
+            return []
+        return _gallery_of({'photo': row[0], 'photos': row[1]})
     else:
         data_file = BASE_DIR / 'data' / 'books.json'
         if not data_file.exists():
-            return None
+            return []
         try:
             books = json.loads(data_file.read_text(encoding='utf-8'))
             book = next((b for b in books if b['id'] == book_id), None)
-            return book.get('photo') if book else None
+            return _gallery_of(book) if book else []
         except Exception:
-            return None
+            return []
 
 @app.get('/api/books')
 def get_books():
@@ -331,9 +363,22 @@ def get_books():
     books = read_books()
     return jsonify([_strip_photo(b) for b in books])
 
-@app.get('/api/books/<book_id>/photo')
-def get_book_photo(book_id):
-    photo = _get_book_photo(book_id)
+@app.get('/api/books/<book_id>/full')
+def get_book_full(book_id):
+    # Solo admin: devuelve el item completo CON las fotos en base64, para poder
+    # editarlas (agregar/quitar) en el modal de edicion.
+    err = check_auth()
+    if err: return err
+    book = next((b for b in read_books() if b['id'] == book_id), None)
+    if not book:
+        return jsonify({'error': 'No encontrado'}), 404
+    return jsonify(book)
+
+def _serve_gallery_image(book_id, idx):
+    gallery = _get_book_gallery(book_id)
+    if idx < 0 or idx >= len(gallery):
+        return '', 404
+    photo = gallery[idx]
     if not photo or not photo.startswith('data:'):
         return '', 404
     try:
@@ -347,10 +392,19 @@ def get_book_photo(book_id):
         return '', 404
 
     resp = Response(img_bytes, mimetype=mime)
-    # Cache largo: la URL incluye photoVersion como querystring, asi cualquier cambio
+    # Cache largo: la URL incluye la version como querystring, asi cualquier cambio
     # de foto invalida la cache automaticamente.
     resp.headers['Cache-Control'] = 'public, max-age=31536000, immutable'
     return resp
+
+@app.get('/api/books/<book_id>/photo')
+def get_book_photo(book_id):
+    # Foto de portada (indice 0 de la galeria).
+    return _serve_gallery_image(book_id, 0)
+
+@app.get('/api/books/<book_id>/photo/<int:idx>')
+def get_book_photo_idx(book_id, idx):
+    return _serve_gallery_image(book_id, idx)
 
 @app.get('/api/lookup')
 def lookup():
@@ -414,18 +468,21 @@ def add_book():
 
     import datetime
     cats = _clean_categories(data.get('categories') or ([data.get('category')] if data.get('category') else []))
+    photos = [p for p in (data.get('photos') or []) if p][:4]
     book = {
-        'id':            str(uuid.uuid4()),
-        'title':         title,
-        'author':        (data.get('author') or '').strip(),
-        'detail':        (data.get('detail') or '').strip(),
-        'originalPrice': orig if orig > 0 else None,
-        'price':         price,
-        'photo':         data.get('photo') or None,
-        'sold':          False,
-        'createdAt':     datetime.datetime.utcnow().isoformat(),
-        'category':      cats[0],
-        'categories':    cats,
+        'id':              str(uuid.uuid4()),
+        'title':           title,
+        'author':          (data.get('author') or '').strip(),
+        'detail':          (data.get('detail') or '').strip(),
+        'longDescription': (data.get('longDescription') or '').strip(),
+        'originalPrice':   orig if orig > 0 else None,
+        'price':           price,
+        'photo':           data.get('photo') or None,
+        'photos':          photos,
+        'sold':            False,
+        'createdAt':       datetime.datetime.utcnow().isoformat(),
+        'category':        cats[0],
+        'categories':      cats,
     }
 
     if DATABASE_URL:
@@ -462,9 +519,11 @@ def patch_book(book_id):
             sold=data.get('sold'),
             price=float(data['price']) if 'price' in data else None,
             photo=data.get('photo'),
+            photos=data.get('photos'),
             title=data.get('title'),
             author=data.get('author'),
             detail=data.get('detail'),
+            long_description=data.get('longDescription'),
             category=data.get('categories') or data.get('category'),
         )
     else:
@@ -478,12 +537,16 @@ def patch_book(book_id):
             book['sold'] = bool(data['sold'])
         if 'photo' in data:
             book['photo'] = data['photo']
+        if 'photos' in data:
+            book['photos'] = [p for p in (data['photos'] or []) if p][:4]
         if 'title' in data:
             book['title'] = data['title']
         if 'author' in data:
             book['author'] = data['author']
         if 'detail' in data:
             book['detail'] = data['detail']
+        if 'longDescription' in data:
+            book['longDescription'] = data['longDescription']
         if 'category' in data:
             book['category'] = _clean_category(data['category'])
         save_books_json(books)
