@@ -197,6 +197,29 @@ def init_db():
                     "INSERT INTO schema_migrations (version, applied_at) VALUES (8, %s)",
                     (datetime.datetime.utcnow().isoformat(),)
                 )
+
+            # Migracion 9: agregamos el set de cama King (categoria dormitorio) a
+            # la seccion Casa. Reinsertamos todo CASA_SEED con ON CONFLICT DO
+            # NOTHING, asi solo entran los items que aun no existen (el set nuevo).
+            # El INSERT ya trae price y original_price correctos. Idempotente por id.
+            cur.execute("SELECT 1 FROM schema_migrations WHERE version = 9")
+            if not cur.fetchone():
+                import datetime
+                now = datetime.datetime.utcnow().isoformat()
+                for it in CASA_SEED:
+                    cur.execute("""
+                        INSERT INTO books
+                            (id, title, author, detail, long_description, original_price,
+                             price, photo, photos, sold, created_at, category, categories)
+                        VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                        ON CONFLICT (id) DO NOTHING
+                    """, (it['id'], it['title'], '', it['detail'], it['long'],
+                          it.get('original_price'),
+                          it['price'], None, [], False, now, it['category'], [it['category']]))
+                cur.execute(
+                    "INSERT INTO schema_migrations (version, applied_at) VALUES (9, %s)",
+                    (now,)
+                )
         conn.commit()
 
 # Categorias permitidas. Cualquier otra cosa se guarda como 'novelas_judias'.
@@ -371,6 +394,42 @@ CASA_SEED = [
             💲 Precio: $279.000 (conversable)
             📍 Retiro en Santiago. Te lo muestro funcionando antes de comprar.
             📸 Fotos reales del equipo.'''),
+    },
+    {
+        'id': 'casa-set-cama-king-rosen-grafite',
+        'title': 'Set de cama King — Colchón Rosen Grafite + base + respaldo + 2 veladores',
+        'detail': 'Colchón Rosen Grafite King 180×200 + base dividida + respaldo de madera + par de veladores. Muy buen estado. Se vende como set.',
+        'price': 440000,
+        # Mercado usado (suma de los topes de cada pieza): 220.000 + 150.000 +
+        # 100.000 + 80.000 = 550.000. Lo usamos como precio de referencia tachado.
+        'original_price': 550000,
+        'category': 'dormitorio',
+        'long': textwrap.dedent('''\
+            Set de cama King — Colchón Rosen Grafite + base dividida + respaldo + par de veladores
+
+            Vendo set de cama King completo, listo para armar y dormir. Todo en muy buen estado y bien cuidado. Se vende como conjunto.
+
+            Incluye:
+
+            ✅ Colchón Rosen Grafite — King (180×200)
+            Modelo Grafite de Rosen, marca reconocida por su durabilidad. Muy buen estado, sin manchas ni hundimientos, firmeza intacta.
+            Mercado usado: $150.000–$220.000 · Nuestro precio: $180.000
+
+            ✅ Base dividida Flex — King (2 cuerpos de 1 plaza)
+            Base box dividida en 2 cuerpos de una plaza, práctica para subir por escaleras. Tapiz café, estructura firme, patas de madera.
+            Mercado usado: $80.000–$150.000 · Nuestro precio: $120.000
+
+            ✅ Respaldo King de madera
+            Cabecera King en madera clara, líneas simples. Combina con cualquier dormitorio. Sólido.
+            Mercado usado: $55.000–$100.000 · Nuestro precio: $70.000
+
+            ✅ Par de veladores de madera
+            Dos veladores haciendo juego, madera clara con cajones. Se venden como par.
+            Mercado usado: $50.000–$80.000 · Nuestro precio: $70.000
+
+            💲 Precio del set completo: $440.000 (conversable)
+            📍 Retiro en Santiago. El comprador coordina el traslado.
+            📸 Fotos reales del set.'''),
     },
 ]
 
