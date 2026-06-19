@@ -6,6 +6,7 @@ import hashlib
 import textwrap
 import urllib.request
 import urllib.parse
+from io import BytesIO
 from pathlib import Path
 from flask import Flask, request, jsonify, send_from_directory, Response
 
@@ -772,6 +773,194 @@ def patch_book(book_id):
         save_books_json(books)
 
     return jsonify({'success': True})
+
+# ---------- catalogo PDF ----------
+
+# Etiquetas lindas para mostrar en el PDF (las mismas que usa la web).
+CATEGORY_LABELS = {
+    'hebreo': 'Hebreo', 'ingles_espanol': 'Torá Ing/Esp',
+    'novelas_judias': 'Novelas Judías', 'seculares': 'Seculares',
+    'ninos': 'Niños', 'mujeres': 'Mujeres',
+    'cocina': 'Cocina', 'decoracion': 'Decoración',
+    'dormitorio': 'Dormitorio', 'bano': 'Baño', 'herramientas': 'Herramientas',
+}
+
+# Orden en que aparecen las categorias dentro de cada seccion en el PDF.
+SECTION_ORDER = {
+    'libros': ['hebreo', 'ingles_espanol', 'novelas_judias', 'ninos', 'mujeres', 'seculares'],
+    'casa':   ['cocina', 'decoracion', 'dormitorio', 'bano', 'herramientas'],
+}
+
+SECTION_TITLES = {'libros': 'Libros', 'casa': 'Casa'}
+
+# Emojis -> texto. Las fuentes estandar del PDF (Helvetica) no dibujan emojis,
+# asi que los reemplazamos por algo legible antes de imprimir.
+_EMOJI_MAP = {
+    '✅': '•', '☑️': '•', '✔️': '•', '❌': '-',
+    '💲': '', '📍': '', '📸': '', '📷': '', '🎥': '', '🎬': '',
+    '✡️': '', '🏠': '', '📚': '', '📖': '', '🛒': '', '🔥': '', '⭐': '',
+}
+
+def _pdf_text(s):
+    """Deja el texto seguro para imprimir en el PDF: cambia emojis por texto y
+    bota cualquier caracter que la fuente no sepa dibujar (manteniendo tildes y ñ)."""
+    if not s:
+        return ''
+    for k, v in _EMOJI_MAP.items():
+        s = s.replace(k, v)
+    # cp1252 = la codificacion que usa Helvetica en reportlab (incluye tildes, ñ, •).
+    return s.encode('cp1252', 'ignore').decode('cp1252')
+
+def _fmt_clp(v):
+    """Formatea un numero como precio en pesos chilenos: 567000 -> $567.000"""
+    if v is None:
+        return ''
+    try:
+        return '$' + format(int(round(float(v))), ',').replace(',', '.')
+    except (ValueError, TypeError):
+        return ''
+
+def _section_items(section):
+    """Items de una seccion, no vendidos, agrupados por categoria en orden."""
+    order = SECTION_ORDER.get(section, [])
+    order_set = set(order)
+    groups = {cat: [] for cat in order}
+    for b in read_books():
+        if b.get('sold'):
+            continue
+        cats = b.get('categories') or [b.get('category')]
+        # El item va bajo la primera categoria suya que pertenezca a la seccion.
+        target = next((c for c in cats if c in order_set), None)
+        if target is None:
+            continue
+        groups[target].append(b)
+    return [(cat, groups[cat]) for cat in order if groups[cat]]
+
+def build_catalog_pdf(section):
+    """Arma el catalogo PDF de una seccion (con fotos) y lo devuelve en bytes."""
+    from reportlab.lib.pagesizes import A4
+    from reportlab.lib.units import cm
+    from reportlab.lib import colors
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib.utils import ImageReader
+    from reportlab.platypus import (
+        SimpleDocTemplate, Paragraph, Spacer, Image, Table, TableStyle, KeepTogether,
+    )
+    from xml.sax.saxutils import escape
+
+    BROWN = colors.HexColor('#2c1810')
+    GOLD = colors.HexColor('#8a6d3b')
+    GREEN = colors.HexColor('#2e7d32')
+    GREY = colors.HexColor('#777777')
+
+    styles = getSampleStyleSheet()
+    h_title = ParagraphStyle('CatTitle', parent=styles['Title'],
+                             textColor=BROWN, fontSize=24, spaceAfter=2)
+    h_sub = ParagraphStyle('CatSub', parent=styles['Normal'],
+                           textColor=GREY, fontSize=10, alignment=1, spaceAfter=6)
+    h_cat = ParagraphStyle('CatCat', parent=styles['Heading2'],
+                           textColor=GOLD, fontSize=15, spaceBefore=10, spaceAfter=4)
+    s_name = ParagraphStyle('ItemName', parent=styles['Normal'],
+                            fontName='Helvetica-Bold', fontSize=12,
+                            textColor=BROWN, spaceAfter=3, leading=15)
+    s_detail = ParagraphStyle('ItemDetail', parent=styles['Normal'],
+                              fontSize=9.5, leading=13, spaceAfter=3)
+    s_long = ParagraphStyle('ItemLong', parent=styles['Normal'],
+                            fontSize=8.5, leading=12, textColor=colors.HexColor('#444444'))
+    s_price = ParagraphStyle('ItemPrice', parent=styles['Normal'],
+                             fontName='Helvetica-Bold', fontSize=14,
+                             textColor=GREEN, spaceBefore=2)
+    s_orig = ParagraphStyle('ItemOrig', parent=styles['Normal'],
+                            fontSize=8.5, textColor=GREY)
+
+    def P(text, style):
+        return Paragraph(escape(_pdf_text(text)).replace('\n', '<br/>'), style)
+
+    buf = BytesIO()
+    doc = SimpleDocTemplate(
+        buf, pagesize=A4,
+        leftMargin=1.6 * cm, rightMargin=1.6 * cm,
+        topMargin=1.6 * cm, bottomMargin=1.6 * cm,
+        title='Catálogo ' + SECTION_TITLES.get(section, section.title()),
+    )
+
+    story = []
+    story.append(P('Catálogo · ' + SECTION_TITLES.get(section, section.title()), h_title))
+    story.append(Paragraph('Tienda — Libros y cosas del hogar', h_sub))
+    story.append(Spacer(1, 0.3 * cm))
+
+    img_w = 4.6 * cm
+    text_w = doc.width - img_w - 0.4 * cm
+    n_items = 0
+
+    for cat, items in _section_items(section):
+        story.append(P(CATEGORY_LABELS.get(cat, cat.title()), h_cat))
+        for b in items:
+            n_items += 1
+            # ---- columna de texto ----
+            cell = [P(b.get('title') or '(sin nombre)', s_name)]
+            if b.get('detail'):
+                cell.append(P(b['detail'], s_detail))
+            if b.get('longDescription'):
+                cell.append(P(b['longDescription'], s_long))
+            cell.append(P(_fmt_clp(b.get('price')), s_price))
+            orig = b.get('originalPrice')
+            if orig and b.get('price') and orig > b['price']:
+                desc = round((1 - b['price'] / orig) * 100)
+                cell.append(P('Precio internet ' + _fmt_clp(orig)
+                              + '  ·  ' + str(desc) + '% off', s_orig))
+
+            # ---- columna de imagen ----
+            img_flowable = ''
+            gallery = _gallery_of(b)
+            if gallery:
+                try:
+                    header, b64 = gallery[0].split(',', 1)
+                    raw = base64.b64decode(b64)
+                    reader = ImageReader(BytesIO(raw))
+                    iw, ih = reader.getSize()
+                    h = img_w * ih / iw if iw else img_w
+                    h = min(h, 5.0 * cm)
+                    w = h * iw / ih if ih else img_w
+                    w = min(w, img_w)
+                    img_flowable = Image(BytesIO(raw), width=w, height=h)
+                except Exception:
+                    img_flowable = ''
+
+            row = Table([[img_flowable, cell]], colWidths=[img_w, text_w])
+            row.setStyle(TableStyle([
+                ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+                ('LEFTPADDING', (0, 0), (0, 0), 0),
+                ('LEFTPADDING', (1, 0), (1, 0), 8),
+                ('TOPPADDING', (0, 0), (-1, -1), 6),
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+                ('LINEBELOW', (0, 0), (-1, -1), 0.5, colors.HexColor('#e0d5c5')),
+            ]))
+            story.append(KeepTogether(row))
+
+    if n_items == 0:
+        story.append(P('Todavía no hay artículos en esta sección.', s_detail))
+
+    doc.build(story)
+    return buf.getvalue()
+
+@app.get('/api/catalog/<section>.pdf')
+def catalog_pdf(section):
+    section = (section or '').lower()
+    if section not in SECTION_ORDER:
+        return jsonify({'error': 'Sección no válida'}), 404
+    try:
+        pdf = build_catalog_pdf(section)
+    except ImportError:
+        return jsonify({'error': 'Falta la librería reportlab en el servidor'}), 500
+    except Exception as e:
+        print('Error generando catálogo PDF:', e)
+        return jsonify({'error': 'No se pudo generar el catálogo'}), 500
+
+    filename = 'catalogo-' + section + '.pdf'
+    resp = Response(pdf, mimetype='application/pdf')
+    resp.headers['Content-Disposition'] = 'attachment; filename="' + filename + '"'
+    return _no_cache(resp)
 
 # ---------- main ----------
 
