@@ -19,6 +19,7 @@
     .top-bar { display: flex; justify-content: space-between; align-items: center; padding: 10px 16px; background: #3d2314; color: #fdf6ec; font-size: 0.85rem; flex-wrap: wrap; gap: 8px; }
     .top-bar a { color: #c9a87c; text-decoration: none; font-weight: bold; border: 1px solid #c9a87c; padding: 5px 12px; border-radius: 4px; transition: all 0.2s; }
     .top-bar a:hover { background: #c9a87c; color: #2c1810; }
+    .top-bar-actions { display: flex; gap: 8px; align-items: center; }
 
     /* ---- Selector de sección principal ---- */
     .section-switcher { display: grid; grid-template-columns: 1fr 1fr; gap: 0; background: #2c1810; padding: 10px 12px 0; }
@@ -169,7 +170,10 @@
 
 <div class="top-bar">
   <span id="book-count">Cargando...</span>
-  <a href="/admin.html">+ Agregar</a>
+  <span class="top-bar-actions">
+    <a id="catalog-pdf-link" href="/api/catalog/casa.pdf">📄 Catálogo PDF</a>
+    <a href="/admin.html">+ Agregar</a>
+  </span>
 </div>
 
 <div id="admin-bar" class="admin-bar" style="display:none">
@@ -346,6 +350,8 @@
     currentPage = 1;
     document.getElementById('sec-libros').classList.toggle('active', sec === 'libros');
     document.getElementById('sec-casa').classList.toggle('active', sec === 'casa');
+    const pdfLink = document.getElementById('catalog-pdf-link');
+    if (pdfLink) pdfLink.href = '/api/catalog/' + sec + '.pdf';
     renderTabs();
     renderBooks();
   }
