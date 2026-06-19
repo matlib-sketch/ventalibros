@@ -255,6 +255,23 @@ def init_db():
                     "INSERT INTO schema_migrations (version, applied_at) VALUES (10, %s)",
                     (datetime.datetime.utcnow().isoformat(),)
                 )
+
+            # Migracion 11: subimos el precio de referencia (original_price) del
+            # set de cama King al valor nuevo de tienda de las 4 piezas sumadas
+            # (~$1.500.000), en vez del tope de mercado usado ($550.000). Asi el
+            # descuento mostrado (~71%) refleja el ahorro frente a comprarlas
+            # nuevas. Idempotente por version.
+            cur.execute("SELECT 1 FROM schema_migrations WHERE version = 11")
+            if not cur.fetchone():
+                import datetime
+                cur.execute(
+                    "UPDATE books SET original_price=%s WHERE id=%s",
+                    (1500000, 'casa-set-cama-king-rosen-grafite')
+                )
+                cur.execute(
+                    "INSERT INTO schema_migrations (version, applied_at) VALUES (11, %s)",
+                    (datetime.datetime.utcnow().isoformat(),)
+                )
         conn.commit()
 
 # Categorias permitidas. Cualquier otra cosa se guarda como 'novelas_judias'.
@@ -435,9 +452,10 @@ CASA_SEED = [
         'title': 'Set de cama King — Colchón Rosen Grafite + base + respaldo + 2 veladores',
         'detail': 'Colchón Rosen Grafite King 180×200 + base dividida + respaldo de madera + par de veladores. Muy buen estado. Se vende como set.',
         'price': 440000,
-        # Mercado usado (suma de los topes de cada pieza): 220.000 + 150.000 +
-        # 100.000 + 80.000 = 550.000. Lo usamos como precio de referencia tachado.
-        'original_price': 550000,
+        # Precio de referencia tachado = valor nuevo de tienda de las 4 piezas
+        # sumadas (~$1.500.000). Frente a eso, el set en $440.000 queda con ~71%
+        # de descuento. (El mercado usado por pieza va en la descripcion.)
+        'original_price': 1500000,
         'category': 'dormitorio',
         'long': textwrap.dedent('''\
             Set de cama King — Colchón Rosen Grafite + base dividida + respaldo + par de veladores
@@ -461,6 +479,8 @@ CASA_SEED = [
             ✅ Par de veladores de madera
             Dos veladores haciendo juego, madera clara con cajones. Se venden como par.
             Mercado usado: $50.000–$80.000 · Nuestro precio: $70.000
+
+            💡 Compradas nuevas en tienda, las 4 piezas suman alrededor de $1.500.000. El set completo, en muy buen estado, se va en $440.000 — cerca de un 71% menos.
 
             💲 Precio del set completo: $440.000 (conversable)
             📍 Retiro en Santiago. El comprador coordina el traslado.
