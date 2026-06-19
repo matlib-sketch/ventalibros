@@ -18,6 +18,20 @@ ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'libros123')
 _db_url = os.environ.get('DATABASE_URL', '')
 DATABASE_URL = _db_url.replace('postgres://', 'postgresql://') if _db_url else None
 
+# Imagenes de carga inicial (seed). Viven como archivos en seed_assets/ y se
+# guardan en la DB como data URLs base64, igual que las fotos que se suben desde
+# el panel de administracion (ver _serve_gallery_image).
+SEED_ASSETS_DIR = BASE_DIR / 'seed_assets'
+
+def _seed_data_url(filename, mime='image/webp'):
+    """Lee una imagen de seed_assets/ y la devuelve como data URL base64.
+    Si el archivo no existe, devuelve None (el item queda sin esa foto)."""
+    try:
+        data = (SEED_ASSETS_DIR / filename).read_bytes()
+    except OSError:
+        return None
+    return 'data:%s;base64,%s' % (mime, base64.b64encode(data).decode('ascii'))
+
 def check_auth():
     pw = request.headers.get('X-Admin-Password', '')
     if pw != ADMIN_PASSWORD:
@@ -219,6 +233,27 @@ def init_db():
                 cur.execute(
                     "INSERT INTO schema_migrations (version, applied_at) VALUES (9, %s)",
                     (now,)
+                )
+
+            # Migracion 10: agregamos las fotos del set de cama King. Las imagenes
+            # viven en seed_assets/ y se guardan como data URLs base64 en la DB,
+            # igual que las fotos subidas desde el panel. Portada = cama armada;
+            # segunda foto = colchon. Solo setea si el item aun no tiene portada,
+            # para no pisar fotos puestas a mano. Idempotente por version.
+            cur.execute("SELECT 1 FROM schema_migrations WHERE version = 10")
+            if not cur.fetchone():
+                import datetime
+                cover = _seed_data_url('setcama-cama.webp')
+                extra = [p for p in [_seed_data_url('setcama-colchon.webp')] if p]
+                if cover:
+                    cur.execute(
+                        "UPDATE books SET photo=%s, photos=%s "
+                        "WHERE id=%s AND (photo IS NULL OR photo='')",
+                        (cover, extra, 'casa-set-cama-king-rosen-grafite')
+                    )
+                cur.execute(
+                    "INSERT INTO schema_migrations (version, applied_at) VALUES (10, %s)",
+                    (datetime.datetime.utcnow().isoformat(),)
                 )
         conn.commit()
 
