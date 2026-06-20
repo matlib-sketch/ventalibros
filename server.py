@@ -576,13 +576,19 @@ def delete_book_db(book_id):
         conn.commit()
 
 def patch_book_db(book_id, sold=None, price=None, photo=None, title=None, author=None,
-                  detail=None, category=None, long_description=None, photos=None):
+                  detail=None, category=None, long_description=None, photos=None,
+                  original_price=None):
     with get_conn() as conn:
         with conn.cursor() as cur:
             if sold is not None:
                 cur.execute("UPDATE books SET sold=%s WHERE id=%s", (sold, book_id))
             if price is not None:
                 cur.execute("UPDATE books SET price=%s WHERE id=%s", (price, book_id))
+            if original_price is not None:
+                # original_price == 0 (o menor) borra la referencia -> guarda NULL,
+                # asi deja de mostrarse el badge de descuento.
+                cur.execute("UPDATE books SET original_price=%s WHERE id=%s",
+                            (original_price if original_price > 0 else None, book_id))
             if photo is not None:
                 cur.execute("UPDATE books SET photo=%s WHERE id=%s", (photo, book_id))
             if photos is not None:
@@ -848,6 +854,16 @@ def patch_book(book_id):
     if err: return err
 
     data = request.get_json(force=True)
+
+    # original_price: si viene la clave, la actualizamos. Vacio/None -> 0.0, que
+    # patch_book_db interpreta como "borrar la referencia" (NULL, sin descuento).
+    original_price = None
+    if 'originalPrice' in data:
+        try:
+            original_price = float(data['originalPrice']) if data['originalPrice'] not in (None, '') else 0.0
+        except (ValueError, TypeError):
+            original_price = None
+
     if DATABASE_URL:
         patch_book_db(
             book_id,
@@ -860,6 +876,7 @@ def patch_book(book_id):
             detail=data.get('detail'),
             long_description=data.get('longDescription'),
             category=data.get('categories') or data.get('category'),
+            original_price=original_price,
         )
     else:
         books = read_books()
@@ -868,6 +885,8 @@ def patch_book(book_id):
             return jsonify({'error': 'No encontrado'}), 404
         if 'price' in data:
             book['price'] = float(data['price'])
+        if 'originalPrice' in data:
+            book['originalPrice'] = original_price if (original_price and original_price > 0) else None
         if 'sold' in data:
             book['sold'] = bool(data['sold'])
         if 'photo' in data:

@@ -248,6 +248,10 @@
       <span class="field-label">PRECIO ($)</span>
       <input id="edit-price" type="number" min="0" step="1" placeholder="0">
     </label>
+    <label>
+      <span class="field-label">PRECIO DE MERCADO ($) — opcional, muestra el % de descuento</span>
+      <input id="edit-original-price" type="number" min="0" step="1" placeholder="Vacío = sin descuento">
+    </label>
     <span class="field-label">CATEGORÍAS (puede elegir varias)</span>
     <div class="cat-section-label">📚 Libros</div>
     <div class="cat-row" id="edit-cat-libros">
@@ -809,6 +813,7 @@
     document.getElementById('edit-detail').value = book.detail || '';
     document.getElementById('edit-long').value   = book.longDescription || '';
     document.getElementById('edit-price').value  = book.price != null ? book.price : '';
+    document.getElementById('edit-original-price').value = book.originalPrice != null ? book.originalPrice : '';
     setEditCategories(bookCategories(book));
     renderEditGallery();
     document.getElementById('edit-modal').style.display = 'flex';
@@ -824,13 +829,20 @@
     const detail = document.getElementById('edit-detail').value.trim();
     const longDescription = document.getElementById('edit-long').value.trim();
     const price  = parseFloat(document.getElementById('edit-price').value);
+    // Precio de mercado (referencia para el % de descuento). Vacío = sin descuento.
+    const originalPriceRaw = document.getElementById('edit-original-price').value.trim();
+    const originalPrice = originalPriceRaw === '' ? '' : parseFloat(originalPriceRaw);
     if (!title) { alert('El nombre no puede estar vacío'); return; }
     if (isNaN(price) || price < 0) { alert('Ingresa un precio válido'); return; }
+    if (originalPriceRaw !== '' && (isNaN(originalPrice) || originalPrice < 0)) { alert('Ingresa un precio de mercado válido'); return; }
+    if (originalPriceRaw !== '' && originalPrice > 0 && originalPrice <= price) {
+      if (!confirm('El precio de mercado es menor o igual al precio de venta, así que no se mostrará descuento. ¿Guardar igual?')) return;
+    }
     const res = await fetch(`/api/books/${editingId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json', 'X-Admin-Password': adminPassword },
       body: JSON.stringify({
-        title, author, detail, longDescription, price,
+        title, author, detail, longDescription, price, originalPrice,
         categories: editCategories,
         photo: editGallery[0] || '',
         photos: editGallery.slice(1)
