@@ -272,6 +272,25 @@ def init_db():
                     "INSERT INTO schema_migrations (version, applied_at) VALUES (11, %s)",
                     (datetime.datetime.utcnow().isoformat(),)
                 )
+
+            # Migracion 12: dejamos TODOS los articulos con un 75% de descuento
+            # SIN tocar el precio de venta. Para eso fijamos el precio de
+            # referencia (original_price, el tachado) en 4x el precio de venta
+            # actual. Asi el descuento mostrado, 1 - price/original_price, da
+            # exactamente 75% (porque price = original_price * 0.25). Pisa los
+            # precios de referencia que ya existian para que todos queden en 75%,
+            # incluido lo que no tenia referencia. Idempotente por version.
+            cur.execute("SELECT 1 FROM schema_migrations WHERE version = 12")
+            if not cur.fetchone():
+                import datetime
+                cur.execute(
+                    "UPDATE books SET original_price = ROUND((price * 4)::numeric, 0) "
+                    "WHERE price IS NOT NULL AND price > 0"
+                )
+                cur.execute(
+                    "INSERT INTO schema_migrations (version, applied_at) VALUES (12, %s)",
+                    (datetime.datetime.utcnow().isoformat(),)
+                )
         conn.commit()
 
 # Categorias permitidas. Cualquier otra cosa se guarda como 'novelas_judias'.
