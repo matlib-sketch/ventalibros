@@ -291,6 +291,28 @@ def init_db():
                     "INSERT INTO schema_migrations (version, applied_at) VALUES (12, %s)",
                     (datetime.datetime.utcnow().isoformat(),)
                 )
+
+            # Migracion 13: la migracion 12 fijo la referencia en 4x el precio
+            # (75% de descuento) para TODOS los articulos, pero ese cambio era
+            # solo para la seccion Libros. Aca restauramos el precio de
+            # referencia real (precio de internet) de los articulos de la seccion
+            # Casa, tomando el valor canonico de CASA_SEED. Asi Casa vuelve a
+            # mostrar su descuento real (40% / ~71%) y Libros queda en 75%.
+            # Idempotente por version.
+            cur.execute("SELECT 1 FROM schema_migrations WHERE version = 13")
+            if not cur.fetchone():
+                import datetime
+                for it in CASA_SEED:
+                    op = it.get('original_price')
+                    if op is not None:
+                        cur.execute(
+                            "UPDATE books SET original_price = %s WHERE id = %s",
+                            (op, it['id'])
+                        )
+                cur.execute(
+                    "INSERT INTO schema_migrations (version, applied_at) VALUES (13, %s)",
+                    (datetime.datetime.utcnow().isoformat(),)
+                )
         conn.commit()
 
 # Categorias permitidas. Cualquier otra cosa se guarda como 'novelas_judias'.
