@@ -1023,21 +1023,16 @@ def _fmt_clp(v):
     except (ValueError, TypeError):
         return ''
 
-def _section_items(section):
-    """Items de una seccion, no vendidos, agrupados por categoria en orden."""
-    order = SECTION_ORDER.get(section, [])
-    order_set = set(order)
-    groups = {cat: [] for cat in order}
-    for b in read_books():
-        if b.get('sold'):
-            continue
-        cats = b.get('categories') or [b.get('category')]
-        # El item va bajo la primera categoria suya que pertenezca a la seccion.
-        target = next((c for c in cats if c in order_set), None)
-        if target is None:
-            continue
-        groups[target].append(b)
-    return [(cat, groups[cat]) for cat in order if groups[cat]]
+def _section_books_by_price(section):
+    """Items no vendidos de una seccion, ordenados por precio de mayor a menor
+    (los mas caros primero). Los que no tienen precio quedan al final."""
+    order_set = set(SECTION_ORDER.get(section, []))
+    items = [b for b in read_books()
+             if not b.get('sold')
+             and any(c in order_set for c in (b.get('categories') or [b.get('category')]))]
+    items.sort(key=lambda b: b['price'] if b.get('price') is not None else float('-inf'),
+               reverse=True)
+    return items
 
 def build_catalog_pdf(section):
     """Arma el catalogo PDF de una seccion (con fotos) y lo devuelve en bytes."""
@@ -1102,50 +1097,49 @@ def build_catalog_pdf(section):
     text_w = doc.width - img_w - 0.4 * cm
     n_items = 0
 
-    for cat, items in _section_items(section):
-        story.append(P(CATEGORY_LABELS.get(cat, cat.title()), h_cat))
-        for b in items:
-            n_items += 1
-            # ---- columna de texto ----
-            cell = [P(b.get('title') or '(sin nombre)', s_name)]
-            if b.get('detail'):
-                cell.append(P(b['detail'], s_detail))
-            if b.get('longDescription'):
-                cell.append(P(b['longDescription'], s_long))
-            cell.append(P(_fmt_clp(b.get('price')), s_price))
-            orig = b.get('originalPrice')
-            if orig and b.get('price') and orig > b['price']:
-                desc = round((1 - b['price'] / orig) * 100)
-                cell.append(P('Precio internet ' + _fmt_clp(orig)
-                              + '  ·  ' + str(desc) + '% off', s_orig))
+    # Orden: los mas caros primero, sin agrupar por categoria.
+    for b in _section_books_by_price(section):
+        n_items += 1
+        # ---- columna de texto ----
+        cell = [P(b.get('title') or '(sin nombre)', s_name)]
+        if b.get('detail'):
+            cell.append(P(b['detail'], s_detail))
+        if b.get('longDescription'):
+            cell.append(P(b['longDescription'], s_long))
+        cell.append(P(_fmt_clp(b.get('price')), s_price))
+        orig = b.get('originalPrice')
+        if orig and b.get('price') and orig > b['price']:
+            desc = round((1 - b['price'] / orig) * 100)
+            cell.append(P('Precio internet ' + _fmt_clp(orig)
+                          + '  ·  ' + str(desc) + '% off', s_orig))
 
-            # ---- columna de imagen ----
-            img_flowable = ''
-            gallery = _gallery_of(b)
-            if gallery:
-                try:
-                    header, b64 = gallery[0].split(',', 1)
-                    raw = base64.b64decode(b64)
-                    reader = ImageReader(BytesIO(raw))
-                    iw, ih = reader.getSize()
-                    h = img_w * ih / iw if iw else img_w
-                    h = min(h, 5.0 * cm)
-                    w = h * iw / ih if ih else img_w
-                    w = min(w, img_w)
-                    img_flowable = Image(BytesIO(raw), width=w, height=h)
-                except Exception:
-                    img_flowable = ''
+        # ---- columna de imagen ----
+        img_flowable = ''
+        gallery = _gallery_of(b)
+        if gallery:
+            try:
+                header, b64 = gallery[0].split(',', 1)
+                raw = base64.b64decode(b64)
+                reader = ImageReader(BytesIO(raw))
+                iw, ih = reader.getSize()
+                h = img_w * ih / iw if iw else img_w
+                h = min(h, 5.0 * cm)
+                w = h * iw / ih if ih else img_w
+                w = min(w, img_w)
+                img_flowable = Image(BytesIO(raw), width=w, height=h)
+            except Exception:
+                img_flowable = ''
 
-            row = Table([[img_flowable, cell]], colWidths=[img_w, text_w])
-            row.setStyle(TableStyle([
-                ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-                ('LEFTPADDING', (0, 0), (0, 0), 0),
-                ('LEFTPADDING', (1, 0), (1, 0), 8),
-                ('TOPPADDING', (0, 0), (-1, -1), 6),
-                ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
-                ('LINEBELOW', (0, 0), (-1, -1), 0.5, colors.HexColor('#e0d5c5')),
-            ]))
-            story.append(KeepTogether(row))
+        row = Table([[img_flowable, cell]], colWidths=[img_w, text_w])
+        row.setStyle(TableStyle([
+            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+            ('LEFTPADDING', (0, 0), (0, 0), 0),
+            ('LEFTPADDING', (1, 0), (1, 0), 8),
+            ('TOPPADDING', (0, 0), (-1, -1), 6),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+            ('LINEBELOW', (0, 0), (-1, -1), 0.5, colors.HexColor('#e0d5c5')),
+        ]))
+        story.append(KeepTogether(row))
 
     if n_items == 0:
         story.append(P('Todavía no hay artículos en esta sección.', s_detail))
