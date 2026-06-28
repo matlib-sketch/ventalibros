@@ -992,6 +992,10 @@ SECTION_ORDER = {
 
 SECTION_TITLES = {'libros': 'Libros', 'casa': 'Casa'}
 
+# Contacto que aparece en el catalogo PDF (encabezado + pie de cada pagina).
+WHATSAPP_DISPLAY = '+56 9 9742 3516'
+WHATSAPP_LINK = 'https://wa.me/56997423516'
+
 # Emojis -> texto. Las fuentes estandar del PDF (Helvetica) no dibujan emojis,
 # asi que los reemplazamos por algo legible antes de imprimir.
 _EMOJI_MAP = {
@@ -1057,6 +1061,9 @@ def build_catalog_pdf(section):
                              textColor=BROWN, fontSize=24, spaceAfter=2)
     h_sub = ParagraphStyle('CatSub', parent=styles['Normal'],
                            textColor=GREY, fontSize=10, alignment=1, spaceAfter=6)
+    h_contact = ParagraphStyle('CatContact', parent=styles['Normal'],
+                               textColor=GREEN, fontSize=11, alignment=1,
+                               fontName='Helvetica-Bold', spaceAfter=6)
     h_cat = ParagraphStyle('CatCat', parent=styles['Heading2'],
                            textColor=GOLD, fontSize=15, spaceBefore=10, spaceAfter=4)
     s_name = ParagraphStyle('ItemName', parent=styles['Normal'],
@@ -1086,6 +1093,9 @@ def build_catalog_pdf(section):
     story = []
     story.append(P('Catálogo · ' + SECTION_TITLES.get(section, section.title()), h_title))
     story.append(Paragraph('Tienda — Libros y cosas del hogar', h_sub))
+    story.append(Paragraph(
+        'Consultas y pedidos por WhatsApp: <a href="%s">%s</a>' % (WHATSAPP_LINK, WHATSAPP_DISPLAY),
+        h_contact))
     story.append(Spacer(1, 0.3 * cm))
 
     img_w = 4.6 * cm
@@ -1140,7 +1150,20 @@ def build_catalog_pdf(section):
     if n_items == 0:
         story.append(P('Todavía no hay artículos en esta sección.', s_detail))
 
-    doc.build(story)
+    def _footer(canvas, doc_):
+        canvas.saveState()
+        canvas.setFont('Helvetica-Bold', 9.5)
+        canvas.setFillColor(GREEN)
+        text = _pdf_text('Contacto WhatsApp: ' + WHATSAPP_DISPLAY)
+        x = A4[0] / 2.0
+        y = 1.0 * cm
+        canvas.drawCentredString(x, y, text)
+        # Hacemos el texto clickeable (abre el chat de WhatsApp).
+        tw = canvas.stringWidth(text, 'Helvetica-Bold', 9.5)
+        canvas.linkURL(WHATSAPP_LINK, (x - tw / 2.0, y - 2, x + tw / 2.0, y + 9), relative=0)
+        canvas.restoreState()
+
+    doc.build(story, onFirstPage=_footer, onLaterPages=_footer)
     return buf.getvalue()
 
 @app.get('/api/catalog/<section>.pdf')
