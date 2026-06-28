@@ -643,14 +643,28 @@ def delete_book_db(book_id):
             cur.execute("DELETE FROM books WHERE id=%s", (book_id,))
         conn.commit()
 
+# Centinela para distinguir "el campo no se envio" de "se envio vacio/None".
+_UNSET = object()
+
+def _coerce_orig(v):
+    """Normaliza el precio de referencia: numero positivo, o None para quitarlo."""
+    try:
+        v = float(v) if v not in (None, '') else None
+    except (ValueError, TypeError):
+        return None
+    return v if (v is not None and v > 0) else None
+
 def patch_book_db(book_id, sold=None, price=None, photo=None, title=None, author=None,
-                  detail=None, category=None, long_description=None, photos=None):
+                  detail=None, category=None, long_description=None, photos=None,
+                  original_price=_UNSET):
     with get_conn() as conn:
         with conn.cursor() as cur:
             if sold is not None:
                 cur.execute("UPDATE books SET sold=%s WHERE id=%s", (sold, book_id))
             if price is not None:
                 cur.execute("UPDATE books SET price=%s WHERE id=%s", (price, book_id))
+            if original_price is not _UNSET:
+                cur.execute("UPDATE books SET original_price=%s WHERE id=%s", (original_price, book_id))
             if photo is not None:
                 cur.execute("UPDATE books SET photo=%s WHERE id=%s", (photo, book_id))
             if photos is not None:
@@ -921,6 +935,7 @@ def patch_book(book_id):
             book_id,
             sold=data.get('sold'),
             price=float(data['price']) if 'price' in data else None,
+            original_price=_coerce_orig(data.get('originalPrice')) if 'originalPrice' in data else _UNSET,
             photo=data.get('photo'),
             photos=data.get('photos'),
             title=data.get('title'),
@@ -936,6 +951,8 @@ def patch_book(book_id):
             return jsonify({'error': 'No encontrado'}), 404
         if 'price' in data:
             book['price'] = float(data['price'])
+        if 'originalPrice' in data:
+            book['originalPrice'] = _coerce_orig(data['originalPrice'])
         if 'sold' in data:
             book['sold'] = bool(data['sold'])
         if 'photo' in data:
