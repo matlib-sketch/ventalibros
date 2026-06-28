@@ -313,6 +313,33 @@ def init_db():
                     "INSERT INTO schema_migrations (version, applied_at) VALUES (13, %s)",
                     (datetime.datetime.utcnow().isoformat(),)
                 )
+
+            # Migracion 14: bajamos el descuento de la seccion Libros de 75% a
+            # 80%, SOLO en Libros. Mantenemos el precio de referencia
+            # (original_price) y bajamos el precio de venta al 20% de la
+            # referencia (price = original_price * 0.20 = 80% de descuento).
+            # Ejemplo: un libro que se vendia en 25 (referencia 100, 75% off)
+            # pasa a venderse en 20 (80% off). Excluimos la seccion Casa con la
+            # misma logica que itemSection() del front: un item es de Casa si
+            # alguna de sus categorias pertenece a Casa (usando 'categories' si
+            # tiene, si no 'category'). Idempotente por version.
+            cur.execute("SELECT 1 FROM schema_migrations WHERE version = 14")
+            if not cur.fetchone():
+                import datetime
+                casa_cats = list(SECTION_CATEGORIES['casa'])
+                cur.execute(
+                    "UPDATE books SET price = ROUND((original_price * 0.20)::numeric, 0) "
+                    "WHERE original_price IS NOT NULL AND original_price > 0 "
+                    "AND NOT ("
+                    "  (CASE WHEN array_length(categories, 1) >= 1 THEN categories "
+                    "        ELSE ARRAY[category] END) && %s::text[]"
+                    ")",
+                    (casa_cats,)
+                )
+                cur.execute(
+                    "INSERT INTO schema_migrations (version, applied_at) VALUES (14, %s)",
+                    (datetime.datetime.utcnow().isoformat(),)
+                )
         conn.commit()
 
 # Categorias permitidas. Cualquier otra cosa se guarda como 'novelas_judias'.
