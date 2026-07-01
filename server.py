@@ -1113,22 +1113,31 @@ def build_catalog_pdf(section):
             cell.append(P('Precio internet ' + _fmt_clp(orig)
                           + '  ·  ' + str(desc) + '% off', s_orig))
 
-        # ---- columna de imagen ----
+        # ---- columna de imagen: TODAS las fotos del producto, apiladas ----
         img_flowable = ''
         gallery = _gallery_of(b)
         if gallery:
-            try:
-                header, b64 = gallery[0].split(',', 1)
-                raw = base64.b64decode(b64)
-                reader = ImageReader(BytesIO(raw))
-                iw, ih = reader.getSize()
+            # Limitamos el alto por foto para que un producto con muchas fotos
+            # no genere una fila mas alta que la pagina (la fila no puede partirse).
+            per_max_h = min(5.0 * cm, (15.5 * cm) / len(gallery))
+            imgs = []
+            for data_url in gallery:
+                try:
+                    _, b64 = data_url.split(',', 1)
+                    raw = base64.b64decode(b64)
+                    reader = ImageReader(BytesIO(raw))
+                    iw, ih = reader.getSize()
+                except Exception:
+                    continue
                 h = img_w * ih / iw if iw else img_w
-                h = min(h, 5.0 * cm)
+                h = min(h, per_max_h)
                 w = h * iw / ih if ih else img_w
                 w = min(w, img_w)
-                img_flowable = Image(BytesIO(raw), width=w, height=h)
-            except Exception:
-                img_flowable = ''
+                if imgs:
+                    imgs.append(Spacer(1, 0.15 * cm))
+                imgs.append(Image(BytesIO(raw), width=w, height=h))
+            if imgs:
+                img_flowable = imgs
 
         row = Table([[img_flowable, cell]], colWidths=[img_w, text_w])
         row.setStyle(TableStyle([
